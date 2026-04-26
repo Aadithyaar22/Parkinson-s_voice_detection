@@ -1,0 +1,23 @@
+{
+  "best_classifier": "logreg",
+  "chosen_model": "logreg",
+  "tuned_threshold": 0.6122287868293224,
+  "sklearn_version_used_for_training": "1.5.2",
+  "italian_cv": {
+    "logreg": {
+      "auc_mean": 0.9885410138575829,
+      "auc_std": 0.013806413367793475,
+      "acc_mean": 0.9591603782207934,
+      "acc_std": 0.028978400296051164,
+      "f1_mean": 0.9494881299996273,
+      "f1_std": 0.038209404579436855
+    }
+  },
+  "italian_subject_level": {
+    "n": 61,
+    "auc": 1.0,
+    "acc": 0.9836065573770492,
+    "f1": 0.9787234042553191
+  },
+  "note": "Retrained locally via scripts/refit_w2v2_local.py to match your installed scikit-learn version."
+}

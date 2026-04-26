@@ -1,0 +1,84 @@
+{
+  "best_classifier": "logreg",
+  "tuned_threshold": 0.3801314896922884,
+  "italian_cv": {
+    "logreg": {
+      "auc_mean": 0.9724743399408915,
+      "auc_std": 0.03403203296006605,
+      "acc_mean": 0.9422635516640149,
+      "acc_std": 0.040514281271453484,
+      "f1_mean": 0.9445471282978215,
+      "f1_std": 0.039514149526849694
+    },
+    "logreg_pca64": {
+      "auc_mean": 0.9666510415998701,
+      "auc_std": 0.035952596896553314,
+      "acc_mean": 0.9203212411515811,
+      "acc_std": 0.03493496913466085,
+      "f1_mean": 0.9226033082223422,
+      "f1_std": 0.03843647602781579
+    },
+    "logreg_pca128": {
+      "auc_mean": 0.9690342114250917,
+      "auc_std": 0.03724098806184183,
+      "acc_mean": 0.9339985249517234,
+      "acc_std": 0.03695140964384292,
+      "f1_mean": 0.9367473678040688,
+      "f1_std": 0.03580041205673193
+    },
+    "svm_rbf": {
+      "auc_mean": 0.9636421012667504,
+      "auc_std": 0.039726827791580537,
+      "acc_mean": 0.9203345492149942,
+      "acc_std": 0.040654327471522984,
+      "f1_mean": 0.9257696106142399,
+      "f1_std": 0.03603377689515537
+    },
+    "lgbm": {
+      "auc_mean": 0.9664627044810447,
+      "auc_std": 0.03293167275033573,
+      "acc_mean": 0.914630343677189,
+      "acc_std": 0.023434664369969386,
+      "f1_mean": 0.919393257086057,
+      "f1_std": 0.02245119545598522
+    }
+  },
+  "italian_subject_level": {
+    "n": 61,
+    "auc": 0.9954954954954955,
+    "acc": 0.9508196721311475,
+    "f1": 0.9387755102040817
+  },
+  "comparison_with_handcrafted": {
+    "handcrafted_voting_auc": 0.9744,
+    "handcrafted_voting_acc": 0.9292,
+    "wav2vec2_auc": 0.9724743399408915,
+    "wav2vec2_acc": 0.9422635516640149,
+    "auc_delta": -0.001925660059108547,
+    "acc_delta": 0.01306355166401485
+  },
+  "user_predictions": [
+    {
+      "file": "New Recording.m4a",
+      "p_pd": 0.006590622749443409,
+      "prediction": "HC"
+    },
+    {
+      "file": "New Recording 4.m4a",
+      "p_pd": 0.21924659464275875,
+      "prediction": "HC"
+    },
+    {
+      "file": "New Recording 2.m4a",
+      "p_pd": 0.036497458809502135,
+      "prediction": "HC"
+    },
+    {
+      "file": "New Recording 3.m4a",
+      "p_pd": 0.11396065611113669,
+      "prediction": "HC"
+    }
+  ],
+  "user_mean_p_pd": 0.09407383307821025,
+  "user_aggregate_prediction": "HC"
+}

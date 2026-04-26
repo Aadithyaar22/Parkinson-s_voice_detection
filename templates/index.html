@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Parkinson's Voice Analyser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --blue-50:  #EFF6FF;
+    --blue-100: #DBEAFE;
+    --blue-200: #BFDBFE;
+    --blue-300: #93C5FD;
+    --blue-400: #60A5FA;
+    --blue-500: #3B82F6;
+    --blue-600: #2563EB;
+    --blue-700: #1D4ED8;
+    --blue-800: #1E40AF;
+    --blue-900: #1E3A8A;
+    --ink:       #0B1533;
+    --ink-soft:  #3E4A6F;
+    --ink-mute:  #6B7796;
+    --panel:     rgba(255, 255, 255, 0.72);
+    --panel-solid: #FFFFFF;
+    --stroke:    rgba(13, 37, 88, 0.10);
+    --stroke-strong: rgba(13, 37, 88, 0.20);
+    --success:   #0EA371;
+    --danger:    #DC2B4C;
+    --warn:      #D97706;
+    --shadow-sm: 0 1px 2px rgba(16, 38, 90, 0.06), 0 2px 6px rgba(16, 38, 90, 0.04);
+    --shadow-md: 0 6px 16px rgba(16, 38, 90, 0.08), 0 2px 4px rgba(16, 38, 90, 0.04);
+    --shadow-lg: 0 18px 48px rgba(16, 38, 90, 0.12), 0 4px 12px rgba(16, 38, 90, 0.06);
+    --display:   "Space Grotesk", system-ui, -apple-system, sans-serif;
+    --sans:      "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 22px;
+    --radius-xl: 28px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--sans);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.55;
+    background: #F6F9FF;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* --- animated background --- */
+  .bg {
+    position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background: radial-gradient(ellipse 80% 55% at 20% 0%, #E0ECFF 0%, transparent 55%),
+                radial-gradient(ellipse 60% 45% at 100% 30%, #DEEBFF 0%, transparent 50%),
+                linear-gradient(180deg, #F6F9FF 0%, #FFFFFF 100%);
+  }
+  .bg svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0.55;
+  }
+  .blob {
+    position: absolute; border-radius: 50%; filter: blur(60px);
+    opacity: 0.55; mix-blend-mode: multiply;
+    animation: float 18s ease-in-out infinite;
+  }
+  .blob.b1 { width: 520px; height: 520px; top: -180px; left: -120px;
+             background: radial-gradient(circle, #BFDBFE 0%, transparent 70%); }
+  .blob.b2 { width: 440px; height: 440px; top: 40%; right: -140px;
+             background: radial-gradient(circle, #C7DFFF 0%, transparent 70%);
+             animation-delay: -6s; }
+  .blob.b3 { width: 380px; height: 380px; bottom: -120px; left: 20%;
+             background: radial-gradient(circle, #93C5FD 0%, transparent 70%);
+             animation-delay: -12s; opacity: 0.3; }
+  @keyframes float {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(40px, -30px) scale(1.05); }
+    66%      { transform: translate(-30px, 20px) scale(0.95); }
+  }
+
+  /* --- grid pattern overlay --- */
+  .grid-overlay {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 75% 65% at 50% 30%, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 30%, black 30%, transparent 75%);
+  }
+
+  /* --- layout --- */
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 28px 80px; }
+
+  header.top-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 56px;
+    animation: fadeDown 0.7s ease-out both;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+    position: relative;
+  }
+  .brand-mark::after {
+    content: ""; position: absolute; inset: 2px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--blue-400), var(--blue-600));
+    opacity: 0.55;
+  }
+  .brand-mark svg { position: relative; z-index: 1; }
+  .brand-name {
+    font-family: var(--display); font-weight: 700; font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+  .brand-sub {
+    font-size: 12px; color: var(--ink-mute); letter-spacing: 0.02em;
+    text-transform: uppercase; font-weight: 500;
+  }
+
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 999px;
+    font-size: 12px; font-weight: 500;
+    background: var(--panel); backdrop-filter: blur(8px);
+    border: 1px solid var(--stroke); color: var(--ink-soft);
+  }
+  .pill.blue { background: var(--blue-50); border-color: var(--blue-200); color: var(--blue-700); }
+  .pill.dot::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--blue-500); box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+    animation: breathe 2.2s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%,100% { box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
+    50%     { box-shadow: 0 0 0 6px rgba(59,130,246,.08); }
+  }
+
+  /* --- hero --- */
+  .hero { text-align: center; margin: 32px auto 64px; max-width: 760px;
+          animation: fadeUp 0.9s cubic-bezier(.2,.8,.2,1) both; }
+  .hero-eyebrow {
+    display: inline-block; padding: 6px 14px;
+    border: 1px solid var(--blue-200); color: var(--blue-700);
+    background: var(--blue-50); border-radius: 999px;
+    font-size: 12px; font-weight: 500; letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(40px, 6vw, 68px);
+    line-height: 1.02; letter-spacing: -0.035em;
+    color: var(--ink); margin-bottom: 20px;
+  }
+  h1 .grad {
+    background: linear-gradient(135deg, var(--blue-600) 0%, var(--blue-400) 55%, var(--blue-700) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+  }
+  .lede {
+    font-size: 18px; color: var(--ink-soft); max-width: 620px;
+    margin: 0 auto 28px; line-height: 1.6;
+  }
+  .metrics {
+    display: inline-flex; gap: 2px; padding: 2px;
+    background: var(--panel); backdrop-filter: blur(16px);
+    border: 1px solid var(--stroke); border-radius: 16px;
+    box-shadow: var(--shadow-md);
+  }
+  .metric {
+    padding: 12px 22px; min-width: 112px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .metric + .metric { border-left: 1px solid var(--stroke); }
+  .metric-value {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    color: var(--blue-700); letter-spacing: -0.01em;
+  }
+  .metric-label {
+    font-size: 11px; font-weight: 500; color: var(--ink-mute);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  /* --- main panels --- */
+  .main { display: grid; gap: 24px; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  @media (max-width: 880px) { .main { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel); backdrop-filter: blur(18px);
+    border: 1px solid var(--stroke);
+    border-radius: var(--radius-xl);
+    padding: 32px; box-shadow: var(--shadow-md);
+    animation: fadeUp 1s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .panel.p2 { animation-delay: 0.1s; }
+  .panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .panel-num {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: var(--blue-600); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 700; font-size: 13px;
+  }
+  .panel h2 {
+    font-family: var(--display); font-weight: 600; font-size: 20px;
+    letter-spacing: -0.015em;
+  }
+  .panel .hint {
+    font-size: 14px; color: var(--ink-mute); margin-bottom: 22px;
+    padding-left: 38px;
+  }
+
+  /* --- drop zone --- */
+  .drop {
+    display: block;
+    position: relative;
+    border: 2px dashed var(--blue-300);
+    border-radius: var(--radius-md);
+    padding: 40px 24px; text-align: center;
+    background: linear-gradient(180deg, #FBFDFF 0%, #F2F7FF 100%);
+    cursor: pointer; transition: all 0.2s ease;
+    overflow: hidden;
+  }
+  .drop::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%),
+                rgba(59, 130, 246, 0.10) 0%, transparent 45%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .drop:hover::before, .drop.drag::before { opacity: 1; }
+  .drop:hover, .drop.drag {
+    border-color: var(--blue-500); transform: translateY(-1px);
+    background: linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12);
+  }
+  .drop input { display: none; }
+  .drop-icon {
+    width: 48px; height: 48px; margin: 0 auto 14px;
+    background: var(--blue-100); border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--blue-600);
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .drop:hover .drop-icon { transform: scale(1.08) rotate(-4deg); }
+  .drop-title {
+    font-family: var(--display); font-weight: 600; font-size: 17px;
+    margin-bottom: 4px; letter-spacing: -0.01em;
+  }
+  .drop-sub { font-size: 13px; color: var(--ink-mute); }
+
+  /* --- actions --- */
+  .divider {
+    display: flex; align-items: center; gap: 14px;
+    margin: 22px 0; color: var(--ink-mute); font-size: 12px;
+    font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--stroke);
+  }
+
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    font-family: var(--sans); font-weight: 600; font-size: 14px;
+    padding: 12px 22px; border-radius: 12px;
+    border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.18s ease; letter-spacing: -0.005em;
+  }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--blue-500), var(--blue-700));
+    color: white;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-danger {
+    background: linear-gradient(180deg, #EF4764, #C71F42);
+    color: white;
+    box-shadow: 0 4px 14px rgba(220, 43, 76, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .btn-ghost {
+    background: var(--panel-solid); color: var(--ink);
+    border: 1px solid var(--stroke-strong);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-ghost:hover:not(:disabled) { background: var(--blue-50); border-color: var(--blue-300); color: var(--blue-700); }
+  .btn-accent {
+    background: var(--blue-50); color: var(--blue-700);
+    border: 1px solid var(--blue-200);
+  }
+  .btn-accent:hover:not(:disabled) { background: var(--blue-100); transform: translateY(-1px); }
+
+  .rec-timer {
+    margin-left: auto;
+    font-family: var(--display); font-weight: 600;
+    color: var(--danger); display: flex; align-items: center; gap: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .rec-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.4; transform: scale(0.85); } }
+
+  audio { width: 100%; margin-top: 16px; border-radius: 10px; }
+
+  .status {
+    margin-top: 16px; padding: 12px 16px; min-height: 44px;
+    font-size: 14px; color: var(--ink-soft);
+    background: var(--blue-50); border-radius: 12px;
+    border: 1px solid var(--blue-100);
+    display: none; align-items: center; gap: 10px;
+  }
+  .status.show { display: flex; }
+  .spin {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--blue-200); border-top-color: var(--blue-600);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* --- result panel --- */
+  .result { display: none; }
+  .result.show { display: block; animation: fadeUp 0.6s cubic-bezier(.2,.8,.2,1) both; }
+
+  .verdict {
+    position: relative;
+    padding: 24px; border-radius: var(--radius-lg);
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 24px; overflow: hidden;
+  }
+  .verdict::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  }
+  .verdict.healthy {
+    background: linear-gradient(90deg, #ECFDF5 0%, #F0FDFA 100%);
+    border: 1px solid #A7F3D0;
+  }
+  .verdict.healthy::before { background: var(--success); }
+  .verdict.pd {
+    background: linear-gradient(90deg, #FEF2F4 0%, #FDF2F8 100%);
+    border: 1px solid #FBCFE8;
+  }
+  .verdict.pd::before { background: var(--danger); }
+  .verdict-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .healthy .verdict-icon { background: rgba(14, 163, 113, 0.13); color: var(--success); }
+  .pd .verdict-icon { background: rgba(220, 43, 76, 0.13); color: var(--danger); }
+  .verdict-text .v-label {
+    font-family: var(--display); font-weight: 600; font-size: 19px;
+    letter-spacing: -0.015em; margin-bottom: 3px;
+  }
+  .verdict-text .v-meta { font-size: 13px; color: var(--ink-soft); }
+
+  .gauge {
+    margin: 6px 0 22px;
+    padding: 18px 20px;
+    background: var(--panel-solid); border: 1px solid var(--stroke);
+    border-radius: var(--radius-md);
+  }
+  .gauge-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .gauge-title {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-mute);
+  }
+  .gauge-value {
+    font-family: var(--display); font-weight: 700; font-size: 28px;
+    color: var(--blue-700); font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .gauge-bar {
+    position: relative; height: 10px; border-radius: 999px;
+    background: linear-gradient(90deg, #D1FAE5 0%, #FEF3C7 50%, #FECACA 100%);
+    overflow: hidden;
+  }
+  .gauge-needle {
+    position: absolute; top: -4px; bottom: -4px; width: 4px;
+    background: white; border: 2px solid var(--ink);
+    border-radius: 4px; transform: translateX(-50%);
+    transition: left 0.9s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  }
+  .gauge-labels {
+    display: flex; justify-content: space-between;
+    margin-top: 8px; font-size: 11px;
+    color: var(--ink-mute); font-weight: 500;
+  }
+
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .stat {
+    background: var(--blue-50); padding: 14px 16px;
+    border-radius: 12px; border: 1px solid var(--blue-100);
+  }
+  .stat-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--blue-700);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-family: var(--display); font-weight: 600; font-size: 16px;
+    color: var(--ink);
+  }
+
+  details {
+    border-top: 1px solid var(--stroke); padding-top: 16px;
+    margin-top: 8px;
+  }
+  details summary {
+    cursor: pointer; font-size: 13px; color: var(--ink-mute);
+    font-weight: 500; list-style: none; user-select: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "▸"; display: inline-block; margin-right: 6px;
+    transition: transform 0.2s;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  .feat-summary {
+    font-size: 13px; color: var(--ink-soft); margin-top: 12px;
+    padding: 12px; background: var(--blue-50); border-radius: 10px;
+  }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--stroke); }
+  th { font-weight: 500; font-size: 11px; letter-spacing: 0.06em;
+       text-transform: uppercase; color: var(--ink-mute); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--sans); }
+  td.missing { text-align: right; color: var(--warn); font-style: italic; font-size: 12px; }
+  .feat-group {
+    background: var(--blue-50); color: var(--blue-700);
+    font-weight: 600; font-size: 11px; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 6px 12px;
+  }
+
+  .disclaimer {
+    margin-top: 22px; padding: 14px 16px;
+    background: #FFFBEB; border: 1px solid #FDE68A;
+    border-radius: 12px; font-size: 12px; color: #78350F;
+    line-height: 1.55;
+  }
+
+  footer {
+    text-align: center; margin-top: 64px; padding-top: 32px;
+    border-top: 1px solid var(--stroke);
+    font-size: 13px; color: var(--ink-mute);
+  }
+  footer code {
+    background: var(--blue-50); padding: 2px 8px; border-radius: 6px;
+    font-size: 12px; color: var(--blue-700);
+  }
+
+  /* --- intro animations --- */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="wave1" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%"  stop-color="#BFDBFE" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#93C5FD" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="wave2" x1="0" x2="1" y1="0" y2="1">
+        <stop offset="0%"  stop-color="#60A5FA" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="M0,360 C240,240 480,420 720,340 C960,260 1200,420 1440,320 L1440,900 L0,900 Z"
+          fill="url(#wave1)">
+      <animate attributeName="d" dur="14s" repeatCount="indefinite"
+        values="M0,360 C240,240 480,420 720,340 C960,260 1200,420 1440,320 L1440,900 L0,900 Z;
+                M0,320 C240,440 480,260 720,380 C960,420 1200,260 1440,360 L1440,900 L0,900 Z;
+                M0,360 C240,240 480,420 720,340 C960,260 1200,420 1440,320 L1440,900 L0,900 Z"/>
+    </path>
+    <path d="M0,520 C300,440 600,600 900,500 C1140,440 1320,580 1440,500 L1440,900 L0,900 Z"
+          fill="url(#wave2)">
+      <animate attributeName="d" dur="18s" repeatCount="indefinite"
+        values="M0,520 C300,440 600,600 900,500 C1140,440 1320,580 1440,500 L1440,900 L0,900 Z;
+                M0,480 C300,600 600,460 900,540 C1140,600 1320,460 1440,540 L1440,900 L0,900 Z;
+                M0,520 C300,440 600,600 900,500 C1140,440 1320,580 1440,500 L1440,900 L0,900 Z"/>
+    </path>
+  </svg>
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+<div class="grid-overlay"></div>
+
+<div class="wrap">
+
+  <header class="top-nav">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Voice<span style="color: var(--blue-600);">·</span>PD</div>
+        <div class="brand-sub">Parkinson's Voice Analyser</div>
+      </div>
+    </div>
+    <div class="pills">
+      {% if model_loaded %}
+        <span class="pill blue dot">{{ backend }}</span>
+        {% if backend == 'wav2vec2' and report.italian_cv %}
+          {% set best = report.best_classifier %}
+          {% set cv = report.italian_cv[best] %}
+          <span class="pill">CV AUC {{ '%.3f'|format(cv.auc_mean) }}</span>
+        {% elif report.cv_summary %}
+          <span class="pill">CV AUC {{ '%.3f'|format(report.cv_summary.auc_mean) }}</span>
+        {% endif %}
+      {% else %}
+        <span class="pill" style="color: var(--danger);">Model not loaded</span>
+      {% endif %}
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-eyebrow">AI · Speech biomarkers · Research preview</div>
+    <h1>Detect Parkinson's<br/>from a <span class="grad">single breath</span>.</h1>
+    <p class="lede">
+      Record three seconds of your voice saying "aaaah." A multilingual self-supervised model
+      analyses acoustic biomarkers linked to early vocal degradation — the kind a doctor
+      can't always hear.
+    </p>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-value">0.995</div>
+        <div class="metric-label">Subject AUC</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">94.2%</div>
+        <div class="metric-label">CV Accuracy</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">61</div>
+        <div class="metric-label">Subjects</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">&lt; 3s</div>
+        <div class="metric-label">Latency</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="main">
+    <!-- Input panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-num">1</span>
+        <h2>Provide a voice sample</h2>
+      </div>
+      <p class="hint">Say "aaaah" steadily for 3–5 seconds. Quiet room, mouth ~10 cm from the mic.</p>
+
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="audio/*" />
+        <div class="drop-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="drop-title">Drop or click to upload audio</div>
+        <div class="drop-sub">wav · mp3 · flac · ogg · m4a · webm — up to 25 MB</div>
+      </label>
+
+      <div class="divider">Or record live</div>
+
+      <div class="controls">
+        <button id="recBtn" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          Record
+        </button>
+        <button id="stopBtn" class="btn btn-danger" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="1.5"/>
+          </svg>
+          Stop
+        </button>
+        <button id="analyzeBtn" class="btn btn-accent" disabled>
+          Analyse
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
+        <span id="timer" class="rec-timer" style="display:none"></span>
+      </div>
+
+      <audio id="preview" controls style="display:none"></audio>
+      <div id="status" class="status"></div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="panel p2">
+      <div class="panel-header">
+        <span class="panel-num">2</span>
+        <h2>Analysis result</h2>
+      </div>
+      <p class="hint" id="resultIntro">
+        Your result will appear here after analysis. We'll show the probability, a
+        confidence gauge, and the acoustic features the model used.
+      </p>
+
+      <div class="result" id="result">
+        <div id="verdict" class="verdict"></div>
+
+        <div class="gauge">
+          <div class="gauge-header">
+            <span class="gauge-title">Probability of Parkinson's</span>
+            <span class="gauge-value" id="probText">0.0%</span>
+          </div>
+          <div class="gauge-bar">
+            <div class="gauge-needle" id="gaugeNeedle" style="left: 0%"></div>
+          </div>
+          <div class="gauge-labels">
+            <span>Healthy (0%)</span>
+            <span id="thrLabel">Threshold</span>
+            <span>Parkinson's (100%)</span>
+          </div>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat">
+            <div class="stat-label">Confidence</div>
+            <div class="stat-value" id="statConfidence">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Model</div>
+            <div class="stat-value" id="statModel">—</div>
+          </div>
+        </div>
+
+        <div class="feat-summary" id="featureSummary"></div>
+
+        <details>
+          <summary>View extracted acoustic features</summary>
+          <table id="featTable">
+            <thead><tr><th>Feature</th><th style="text-align:right;">Value</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </details>
+
+        <div class="disclaimer">
+          <strong>Research / educational prototype only.</strong> This is not a medical device.
+          Voice-based screening has limitations; clinical decisions must be made by qualified physicians.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    {% if report.dataset %}
+      Trained on {{ report.dataset.n_recordings|default(831) }} recordings from
+      {{ report.dataset.n_subjects|default(61) }} subjects. Subject-grouped
+      <code>StratifiedGroupKFold</code> throughout.
+    {% else %}
+      Subject-grouped <code>StratifiedGroupKFold</code> throughout.
+    {% endif %}
+  </footer>
+
+</div>
+
+<script>
+window.__backend = {{ backend|tojson }};
+
+const FEATURE_GROUPS = {
+  "Pitch (Hz)":        ["MDVP:Fo(Hz)", "MDVP:Fhi(Hz)", "MDVP:Flo(Hz)"],
+  "Jitter":            ["MDVP:Jitter(%)", "MDVP:Jitter(Abs)", "MDVP:RAP", "MDVP:PPQ", "Jitter:DDP"],
+  "Shimmer":           ["MDVP:Shimmer", "MDVP:Shimmer(dB)", "Shimmer:APQ3", "Shimmer:APQ5", "MDVP:APQ", "Shimmer:DDA"],
+  "Noise":             ["NHR", "HNR"],
+  "Nonlinear / Chaos": ["RPDE", "DFA", "spread1", "spread2", "D2", "PPE"],
+};
+
+const $ = (id) => document.getElementById(id);
+const fileInput = $("file"), dropZone = $("drop"), preview = $("preview");
+const recBtn = $("recBtn"), stopBtn = $("stopBtn"), analyzeBtn = $("analyzeBtn");
+const statusEl = $("status"), timerEl = $("timer");
+const resultEl = $("result"), resultIntro = $("resultIntro");
+const verdictEl = $("verdict"), gaugeNeedle = $("gaugeNeedle");
+const probText = $("probText"), thrLabel = $("thrLabel");
+const featBody = document.querySelector("#featTable tbody");
+const featSummary = $("featureSummary");
+
+let currentBlob = null, mediaRecorder = null, chunks = [], recStart = 0, timerId = null;
+
+// --- drop zone cursor-follow gradient ---
+dropZone.addEventListener("mousemove", (e) => {
+  const r = dropZone.getBoundingClientRect();
+  dropZone.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100) + "%");
+  dropZone.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100) + "%");
+});
+
+// --- file handling ---
+fileInput.addEventListener("change", (e) => {
+  if (e.target.files.length) setBlob(e.target.files[0], e.target.files[0].name);
+});
+["dragover","dragenter"].forEach(ev =>
+  dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add("drag"); }));
+["dragleave","dragend","drop"].forEach(ev =>
+  dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove("drag"); }));
+dropZone.addEventListener("drop", (e) => {
+  if (e.dataTransfer.files.length) setBlob(e.dataTransfer.files[0], e.dataTransfer.files[0].name);
+});
+
+function setBlob(blob, name) {
+  currentBlob = { data: blob, name: name || "recording.webm" };
+  preview.src = URL.createObjectURL(blob);
+  preview.style.display = "block";
+  analyzeBtn.disabled = false;
+  showStatus(`Loaded: <strong>${currentBlob.name}</strong> (${(blob.size/1024).toFixed(1)} KB)`);
+}
+
+function showStatus(html, spinning = false) {
+  statusEl.classList.add("show");
+  statusEl.innerHTML = (spinning ? '<span class="spin"></span>' : "") + html;
+}
+function hideStatus() { statusEl.classList.remove("show"); }
+
+// --- recording ---
+recBtn.addEventListener("click", async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    chunks = [];
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mediaRecorder.mimeType || "audio/webm" });
+      stream.getTracks().forEach(t => t.stop());
+      setBlob(blob, "recording.webm");
+    };
+    mediaRecorder.start();
+    recStart = Date.now();
+    timerEl.style.display = "flex";
+    timerId = setInterval(() => {
+      const s = ((Date.now() - recStart) / 1000).toFixed(1);
+      timerEl.innerHTML = `<span class="rec-dot"></span>Recording · ${s}s`;
+    }, 100);
+    recBtn.disabled = true; stopBtn.disabled = false;
+    showStatus("Microphone active — speak now.");
+  } catch (err) {
+    showStatus("Microphone access denied: " + err.message);
+  }
+});
+
+stopBtn.addEventListener("click", () => {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  clearInterval(timerId);
+  timerEl.style.display = "none";
+  recBtn.disabled = false; stopBtn.disabled = true;
+});
+
+// --- analyse ---
+analyzeBtn.addEventListener("click", async () => {
+  if (!currentBlob) return;
+  analyzeBtn.disabled = true;
+  const msg = (window.__backend === "wav2vec2")
+    ? "Running wav2vec2 inference (first request may take ~30s to warm up)..."
+    : "Extracting features and running model...";
+  showStatus(msg, true);
+  resultEl.classList.remove("show");
+
+  const fd = new FormData();
+  fd.append("audio", currentBlob.data, currentBlob.name);
+  try {
+    const res = await fetch("/predict", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || "server error");
+    render(data);
+    showStatus("Analysis complete.");
+  } catch (err) {
+    showStatus("<strong style='color:var(--danger)'>Error:</strong> " + err.message);
+  } finally {
+    analyzeBtn.disabled = false;
+  }
+});
+
+function render(r) {
+  resultEl.classList.add("show");
+  resultIntro.style.display = "none";
+
+  const isPD = r.prediction === 1;
+  verdictEl.className = "verdict " + (isPD ? "pd" : "healthy");
+  verdictEl.innerHTML = `
+    <div class="verdict-icon">
+      ${isPD
+        ? `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`
+        : `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+      }
+    </div>
+    <div class="verdict-text">
+      <div class="v-label">${r.label}</div>
+      <div class="v-meta">P(PD) = ${r.probability_pd.toFixed(3)} · threshold ${r.threshold_used.toFixed(3)}</div>
+    </div>`;
+
+  const pct = (r.probability_pd * 100);
+  gaugeNeedle.style.left = pct + "%";
+  probText.textContent = pct.toFixed(1) + "%";
+  thrLabel.textContent = `Threshold ${(r.threshold_used * 100).toFixed(0)}%`;
+
+  $("statConfidence").textContent = r.confidence_pct + "%";
+  $("statModel").textContent = r.model;
+
+  featBody.innerHTML = "";
+  if (r.backend === "wav2vec2") {
+    featSummary.innerHTML =
+      `Audio encoded as a <strong>${r.n_model_features}-dim</strong> embedding ` +
+      `via wav2vec2-XLS-R. Raw embeddings aren't human-interpretable, so no feature table is shown.`;
+    const det = document.querySelector("details"); if (det) det.style.display = "none";
+    return;
+  }
+  const det = document.querySelector("details"); if (det) det.style.display = "";
+  for (const [group, names] of Object.entries(FEATURE_GROUPS)) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="2" class="feat-group">${group}</td>`;
+    featBody.appendChild(tr);
+    for (const n of names) {
+      const v = r.features[n];
+      const row = document.createElement("tr");
+      row.innerHTML = v == null
+        ? `<td>${n}</td><td class="missing">could not compute</td>`
+        : `<td>${n}</td><td class="num">${formatNum(n, v)}</td>`;
+      featBody.appendChild(row);
+    }
+  }
+  featSummary.innerHTML =
+    `Measured <strong>${r.n_measured}/${r.n_model_features}</strong> model features` +
+    (r.n_imputed > 0
+      ? `. Imputed with training medians: ${r.imputed_features.join(", ")}.`
+      : ". All features computed directly from your audio.");
+}
+
+function formatNum(name, v) {
+  if (name.includes("(Hz)")) return v.toFixed(2);
+  if (name === "HNR" || name === "DFA" || name === "D2") return v.toFixed(3);
+  if (Math.abs(v) >= 1 || v === 0) return v.toFixed(4);
+  if (Math.abs(v) < 0.001) return v.toExponential(3);
+  return v.toFixed(5);
+}
+</script>
+</body>
+</html>

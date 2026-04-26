@@ -1,0 +1,65 @@
+{
+  "chosen_model": "xgb_joint_uci_italian",
+  "tuned_threshold": 0.5876259803771973,
+  "features_used": [
+    "MDVP:Fo(Hz)",
+    "MDVP:Fhi(Hz)",
+    "MDVP:Flo(Hz)",
+    "MDVP:Jitter(%)",
+    "MDVP:Jitter(Abs)",
+    "MDVP:RAP",
+    "MDVP:PPQ",
+    "MDVP:Shimmer",
+    "MDVP:Shimmer(dB)",
+    "Shimmer:APQ3",
+    "Shimmer:APQ5",
+    "MDVP:APQ",
+    "NHR",
+    "HNR",
+    "RPDE",
+    "DFA",
+    "spread1",
+    "spread2",
+    "D2",
+    "PPE"
+  ],
+  "dataset": {
+    "n_recordings": 1026,
+    "n_subjects": 93,
+    "uci_recordings": 195,
+    "italian_recordings": 831
+  },
+  "cv_summary": {
+    "auc_mean": 0.940246552578414,
+    "auc_std": 0.035244933929700226,
+    "acc_mean": 0.90056714409305,
+    "acc_std": 0.042532547255224706,
+    "f1_mean": 0.9122726263639371,
+    "per_corpus_fold_auc": {
+      "UCI_mean": 0.6917844379467187,
+      "UCI_std": 0.09074698499770868,
+      "Italian_mean": 0.9604281261323347,
+      "Italian_std": 0.05851886310376899
+    }
+  },
+  "oof_on_full_training": {
+    "auc": 0.9364695035021384,
+    "acc_at_tuned_threshold": 0.9015594541910331,
+    "f1_at_tuned_threshold": 0.9138959931798807,
+    "confusion_matrix_at_tuned": [
+      [
+        389,
+        53
+      ],
+      [
+        48,
+        536
+      ]
+    ]
+  },
+  "notes": [
+    "Joint training on UCI (Little 2007) + Italian (Dimauro 2019).",
+    "Subject-grouped stratified CV with corpus-prefixed subject IDs ensures no subject leakage.",
+    "Held-out evaluation (separate script) showed this strategy lifts UCI cross-corpus AUC from 0.31 (Italian-only) to 0.76 (joint) while preserving Italian within-corpus AUC at 0.99."
+  ]
+}

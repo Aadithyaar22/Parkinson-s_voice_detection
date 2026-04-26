@@ -1,0 +1,9 @@
+# Optional extras - only needed if you're using wav2vec2 embeddings.
+# Install with:
+#   pip install -r requirements_wav2vec2.txt
+#
+# On Apple Silicon (M1/M2/M3/M4), torch ships with MPS support by default.
+# Expect a ~1.5GB install (torch is big, transformers pulls tokenizers).
+
+torch>=2.1
+transformers>=4.40
