@@ -496,7 +496,7 @@ python -m scripts.train_joint_production
 ## 👤 Built by
 
 **Aadithya A R**
-B.Tech CSE (AI & ML) · Innomatics Research Labs · 2026
+B.Tech CSE (AI & ML) · Global Academy of Technology · 2026
 
 <sub>The original project was a four-person team effort
 (Aadithya, Naman, Yadunandan, Kenisha).<br/>
