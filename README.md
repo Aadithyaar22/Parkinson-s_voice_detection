@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 Parkinspn's Analyzer
+# 🧠 Parkinson's Analyzer
 
 ### Detect Parkinson's disease from three seconds of vocal phonation
 
