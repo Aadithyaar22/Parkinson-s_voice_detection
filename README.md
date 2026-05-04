@@ -495,7 +495,7 @@ python -m scripts.train_joint_production
 
 ## 👤 Built by
 
-**Aadithya A R**
+**Aadithya A R - Yadunandan**<br/>
 B.Tech CSE (AI & ML) · Global Academy of Technology · 2026
 
 <sub>The original project was a four-person team effort
