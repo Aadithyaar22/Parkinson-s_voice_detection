@@ -495,13 +495,13 @@ python -m scripts.train_joint_production
 
 ## 👤 Built by
 
-**Aadithya A R  ·  Yadunandan**<br/>
+**Aadithya A R  ·  Yadunandan M Nimbalkar**<br/>
 B.Tech CSE (AI & ML) · Global Academy of Technology · 2026
 
 <sub>The original project was a four-person team effort
 (Aadithya, Naman, Yadunandan, Kenisha).<br/>
 This v2 rebuild — feature extractor fix, multi-corpus training,
-cross-corpus experiments,<br/>wav2vec2 deployment, web UI — is solo work.</sub>
+cross-corpus experiments,<br/>wav2vec2 deployment, web UI — is duo work.</sub>
 
 <br/>
 
