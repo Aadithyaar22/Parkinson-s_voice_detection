@@ -314,7 +314,7 @@ def explain():
                 safe = chunk.replace(chr(10), " ").replace("\u2028", " ").replace("\u2029", " ")
                 yield f"data: {safe}\n\n"
         except Exception as e:
-            yield f"data: [ERROR] {e}\n\n"
+            yield f"data: [ERROR] {str(e).encode('ascii', errors='replace').decode('ascii')}\n\n"
         finally:
             yield "data: [DONE]\n\n"
     return Response(stream_with_context(generate()), mimetype="text/event-stream; charset=utf-8",
