@@ -1,0 +1,138 @@
+name: Build & Deploy → HuggingFace Space
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  HF_USERNAME:   Aadithya1122
+  HF_SPACE_NAME: parkinsons-voice-detection
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install system deps
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg build-essential
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Feature extractor sanity checks
+        run: python tests/test_extractor.py
+
+      - name: Flask smoke test
+        run: |
+          python -c "
+          import sys, types
+          m = types.ModuleType('src.wav2vec2_inference')
+          m.is_available = lambda: False
+          m.load_error   = lambda: 'ci-skip'
+          sys.modules['src.wav2vec2_inference'] = m
+          import app
+          print(f'OK — backend={app.BACKEND} threshold={app.TUNED_THRESHOLD:.3f}')
+          "
+
+  deploy-space:
+    name: Assemble & push to HuggingFace
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout pva2
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Assemble space_build/
+        run: |
+          mkdir -p space_build/{src,models,templates,static,data,scripts,uploads}
+
+          for f in \
+            src/__init__.py \
+            src/audio_utils.py \
+            src/feature_extractor.py \
+            src/extra_features.py \
+            src/nonlinear_features.py \
+            src/wav2vec2_inference.py \
+            src/llm_explainer.py; do
+            [ -f "$f" ] && cp "$f" "space_build/$f" || echo "WARN: $f not found"
+          done
+
+          cp app.py space_build/
+          cp models/parkinsons_pipeline.joblib space_build/models/
+          cp models/feature_names.pkl          space_build/models/
+          cp models/training_report.json       space_build/models/
+          cp templates/index.html              space_build/templates/
+          [ -d static ] && cp -r static/. space_build/static/ || true
+          cp data/italian_w2v2.csv             space_build/data/
+          cp scripts/refit_w2v2_local.py       space_build/scripts/
+          cp parkinsons_space/README.md        space_build/README.md
+          cp parkinsons_space/Dockerfile       space_build/Dockerfile
+          cp parkinsons_space/.dockerignore    space_build/.dockerignore
+          cp parkinsons_space/requirements.txt space_build/requirements.txt
+          cp parkinsons_space/requirements_wav2vec2.txt space_build/
+
+          touch space_build/uploads/.gitkeep
+
+          echo "=== space_build contents ==="
+          find space_build -type f | sort
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install huggingface_hub
+        run: pip install --quiet huggingface_hub
+
+      - name: Push to HuggingFace Spaces
+        env:
+          HF_TOKEN:     ${{ secrets.HF_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          python - <<'PYEOF'
+          import os
+          from huggingface_hub import HfApi
+
+          token    = os.environ["HF_TOKEN"]
+          username = "${{ env.HF_USERNAME }}"
+          space    = "${{ env.HF_SPACE_NAME }}"
+          repo_id  = f"{username}/{space}"
+          api      = HfApi(token=token)
+
+          groq_key = os.environ.get("GROQ_API_KEY", "")
+          if groq_key:
+              try:
+                  api.add_space_secret(repo_id=repo_id, key="GROQ_API_KEY", value=groq_key)
+                  print(f"✓ GROQ_API_KEY secret set on {repo_id}")
+              except Exception as e:
+                  print(f"! Could not set GROQ secret: {e}")
+
+          print(f"Uploading space_build/ → {repo_id} ...")
+          api.upload_folder(
+              folder_path="space_build",
+              repo_id=repo_id,
+              repo_type="space",
+              commit_message=f"Deploy from GitHub Actions",
+          )
+          print(f"\n✅ Live at: https://huggingface.co/spaces/{repo_id}")
+          PYEOF
+
+      - name: Print live URL
+        run: |
+          echo ""
+          echo "════════════════════════════════════════════════════════"
+          echo "  DEPLOYED"
+          echo "  https://huggingface.co/spaces/${{ env.HF_USERNAME }}/${{ env.HF_SPACE_NAME }}"
+          echo "════════════════════════════════════════════════════════"
