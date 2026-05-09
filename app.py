@@ -317,8 +317,9 @@ def explain():
             yield f"data: [ERROR] {e}\n\n"
         finally:
             yield "data: [DONE]\n\n"
-    return Response(stream_with_context(generate()), mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+    return Response(stream_with_context(generate()), mimetype="text/event-stream; charset=utf-8",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no",
+                             "Content-Type": "text/event-stream; charset=utf-8"})
 
 
 if __name__ == "__main__":
