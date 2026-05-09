@@ -14,3 +14,4 @@ werkzeug>=3.0
 xgboost>=2.0
 lightgbm>=4.0
 optuna>=3.4
+groq>=1.0
