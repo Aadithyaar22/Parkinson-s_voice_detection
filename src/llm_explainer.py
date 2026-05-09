@@ -80,4 +80,4 @@ def explain_stream(probability, threshold, prediction, features, backend):
     for chunk in stream:
         delta = chunk.choices[0].delta.content
         if delta:
-            yield delta
+            yield delta.encode("utf-8", errors="replace").decode("utf-8").replace(" ", " ").replace(" ", " ").replace("‰", " ")
