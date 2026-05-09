@@ -952,7 +952,7 @@ if (explainBtn) {
           if (!line.startsWith("data:")) continue;
           const payload = line.slice(5).trim();
           if (payload === "[DONE]") { cursor.remove(); break; }
-          if (payload.startsWith("[ERROR]")) { cursor.remove(); body.textContent = "Could not generate explanation. Please try again."; break; }
+          if (payload.startsWith("[ERROR]")) { cursor.remove(); body.textContent = payload; break; }
           body.insertBefore(document.createTextNode(payload + " "), cursor);
         }
       }
