@@ -316,7 +316,9 @@ def explain():
                 if safe.strip():
                     yield ("data: " + safe + "\n\n").encode("utf-8")
         except Exception as e:
-            msg = "".join(c if ord(c) < 128 else "?" for c in str(e))
+            import traceback
+            msg = traceback.format_exc().replace("\n", " ")[-200:]
+            msg = "".join(c if ord(c) < 128 else "?" for c in msg)
             yield ("data: [ERROR] " + msg + "\n\n").encode("utf-8")
         finally:
             yield b"data: [DONE]\n\n"
