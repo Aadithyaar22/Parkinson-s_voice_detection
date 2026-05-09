@@ -311,7 +311,8 @@ def explain():
                 body.get("features", {}),
                 body.get("backend", BACKEND),
             ):
-                yield f"data: {chunk.replace(chr(10), ' ')}\n\n"
+                safe = chunk.replace(chr(10), " ").replace("\u2028", " ").replace("\u2029", " ")
+                yield f"data: {safe}\n\n"
         except Exception as e:
             yield f"data: [ERROR] {e}\n\n"
         finally:
