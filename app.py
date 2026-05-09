@@ -322,10 +322,12 @@ def explain():
             yield ("data: [ERROR] " + msg + "\n\n").encode("utf-8")
         finally:
             yield b"data: [DONE]\n\n"
-    return Response(stream_with_context(generate()),
+    resp = Response(stream_with_context(generate()),
                     mimetype="text/event-stream",
                     headers={"Cache-Control": "no-cache",
                              "X-Accel-Buffering": "no"})
+    resp.charset = "utf-8"
+    return resp
 
 
 if __name__ == "__main__":
