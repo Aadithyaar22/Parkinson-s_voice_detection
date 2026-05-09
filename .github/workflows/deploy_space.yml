@@ -13,6 +13,9 @@ jobs:
   test:
     name: Run tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: /home/runner/work/Parkinson-s_voice_detection/Parkinson-s_voice_detection
     steps:
       - uses: actions/checkout@v4
 
@@ -29,11 +32,11 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Feature extractor sanity checks
-        run: python tests/test_extractor.py
+        run: PYTHONPATH=. python tests/test_extractor.py
 
       - name: Flask smoke test
         run: |
-          python -c "
+          PYTHONPATH=. python -c "
           import sys, types
           m = types.ModuleType('src.wav2vec2_inference')
           m.is_available = lambda: False
