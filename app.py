@@ -81,6 +81,11 @@ else:
     print(f"[app] backend: handcrafted ({len(MODEL_FEATURES)} features)")
 
 
+
+# Groq availability
+GROQ_AVAILABLE = bool(os.environ.get("GROQ_API_KEY", ""))
+print(f"[app] Groq explanations: {'enabled' if GROQ_AVAILABLE else 'disabled (set GROQ_API_KEY)'}")
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -180,6 +185,7 @@ def index():
         report=training_report,
         model_loaded=pipeline is not None,
         backend=BACKEND,
+        groq_available=GROQ_AVAILABLE,
     )
 
 
@@ -286,6 +292,32 @@ def predict():
                     os.remove(p)
                 except OSError:
                     pass
+
+
+@app.route("/explain", methods=["POST"])
+def explain():
+    if not GROQ_AVAILABLE:
+        return jsonify({"error": "groq_not_configured",
+                        "message": "Set GROQ_API_KEY to enable explanations."}), 503
+    body = request.get_json(silent=True) or {}
+    from flask import Response, stream_with_context
+    def generate():
+        try:
+            from src.llm_explainer import explain_stream
+            for chunk in explain_stream(
+                float(body.get("probability_pd", 0.5)),
+                float(body.get("threshold_used", 0.5)),
+                int(body.get("prediction", 0)),
+                body.get("features", {}),
+                body.get("backend", BACKEND),
+            ):
+                yield f"data: {chunk.replace(chr(10), ' ')}\n\n"
+        except Exception as e:
+            yield f"data: [ERROR] {e}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+    return Response(stream_with_context(generate()), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 if __name__ == "__main__":
