@@ -28,7 +28,7 @@ import numpy as np
 
 try:
     import nolds
-except ImportError:  # pragma: no cover
+except Exception:  # pragma: no cover
     nolds = None
 
 
