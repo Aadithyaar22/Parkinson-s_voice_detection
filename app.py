@@ -311,15 +311,19 @@ def explain():
                 body.get("features", {}),
                 body.get("backend", BACKEND),
             ):
-                safe = chunk.replace(chr(10), " ").replace("\u2028", " ").replace("\u2029", " ")
-                yield f"data: {safe}\n\n"
+                safe = "".join(c if ord(c) < 128 else " " for c in chunk)
+                safe = safe.replace("\n", " ").replace("\r", " ")
+                if safe.strip():
+                    yield ("data: " + safe + "\n\n").encode("utf-8")
         except Exception as e:
-            yield f"data: [ERROR] {str(e).encode('ascii', errors='replace').decode('ascii')}\n\n"
+            msg = "".join(c if ord(c) < 128 else "?" for c in str(e))
+            yield ("data: [ERROR] " + msg + "\n\n").encode("utf-8")
         finally:
-            yield "data: [DONE]\n\n"
-    return Response(stream_with_context(generate()), mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no",
-                             "Content-Type": "text/event-stream; charset=utf-8"})
+            yield b"data: [DONE]\n\n"
+    return Response(stream_with_context(generate()),
+                    mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache",
+                             "X-Accel-Buffering": "no"})
 
 
 if __name__ == "__main__":
