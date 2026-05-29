@@ -78,7 +78,9 @@ jobs:
           cp models/parkinsons_pipeline.joblib space_build/models/
           cp models/feature_names.pkl          space_build/models/
           cp models/training_report.json       space_build/models/
-          cp templates/index.html              space_build/templates/
+          cp templates/index.html    space_build/templates/
+          cp templates/login.html     space_build/templates/
+          cp templates/dashboard.html space_build/templates/
           [ -d static ] && cp -r static/. space_build/static/ || true
           cp data/italian_w2v2.csv             space_build/data/
           cp scripts/refit_w2v2_local.py       space_build/scripts/
