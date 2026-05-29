@@ -833,12 +833,31 @@ stopBtn.addEventListener("click", () => {
 // --- analyse ---
 analyzeBtn.addEventListener("click", async () => {
   if (!currentBlob) return;
+  // Stop recording if still active
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+    clearInterval(timerId);
+    timerEl.style.display = "none";
+    recBtn.disabled = false;
+    stopBtn.disabled = true;
+  }
   analyzeBtn.disabled = true;
   const msg = (window.__backend === "wav2vec2")
     ? "Running wav2vec2 inference (first request may take ~30s to warm up)..."
     : "Extracting features and running model...";
   showStatus(msg, true);
   resultEl.classList.remove("show");
+
+  // Reset save panel for new analysis
+  const sp = document.getElementById("savePanel");
+  if (sp) sp.style.display = "none";
+  const sb = document.getElementById("saveBtn");
+  if (sb) { sb.disabled = false; sb.textContent = "💾 Save reading";
+            sb.style.background = ""; }
+  const sm = document.getElementById("saveMsg");
+  if (sm) sm.textContent = "";
+  const nf = document.getElementById("notesField");
+  if (nf) nf.value = "";
 
   const fd = new FormData();
   fd.append("audio", currentBlob.data, currentBlob.name);
@@ -1015,7 +1034,7 @@ if (saveBtn) {
       if (res.status === 401) { localStorage.removeItem("pvd_token"); window.location.href = "/login"; return; }
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      document.getElementById("saveMsg").textContent = "✓ Saved!";
+      document.getElementById("saveMsg").textContent = "";
       saveBtn.textContent = "✓ Saved";
       saveBtn.style.background = "linear-gradient(180deg,#0EA371,#059669)";
     } catch(e) {
