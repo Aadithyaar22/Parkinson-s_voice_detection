@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard — Voice·PD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;--blue-300:#93C5FD;
+    --blue-500:#3B82F6;--blue-600:#2563EB;--blue-700:#1D4ED8;
+    --ink:#0B1533;--ink-soft:#3E4A6F;--ink-mute:#6B7796;
+    --panel:rgba(255,255,255,0.80);--panel-solid:#FFFFFF;
+    --stroke:rgba(13,37,88,0.10);--stroke-strong:rgba(13,37,88,0.18);
+    --success:#0EA371;--danger:#DC2B4C;--warn:#D97706;
+    --shadow-md:0 6px 16px rgba(16,38,90,0.08),0 2px 4px rgba(16,38,90,0.04);
+    --display:"Space Grotesk",system-ui,sans-serif;
+    --sans:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:#F6F9FF;
+       -webkit-font-smoothing:antialiased;min-height:100vh;}
+
+  .bg{position:fixed;inset:0;z-index:-2;
+    background:radial-gradient(ellipse 80% 55% at 20% 0%,#E0ECFF 0%,transparent 55%),
+               radial-gradient(ellipse 60% 45% at 100% 30%,#DEEBFF 0%,transparent 50%),
+               linear-gradient(180deg,#F6F9FF 0%,#FFFFFF 100%);}
+  .blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:0.45;mix-blend-mode:multiply;}
+  .blob.b1{width:500px;height:500px;top:-180px;left:-120px;
+            background:radial-gradient(circle,#BFDBFE 0%,transparent 70%);}
+  .blob.b2{width:400px;height:400px;bottom:-100px;right:-100px;
+            background:radial-gradient(circle,#93C5FD 0%,transparent 70%);}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 28px 80px;}
+
+  /* nav */
+  nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:48px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,var(--blue-500),var(--blue-700));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 12px rgba(59,130,246,0.35);}
+  .brand-name{font-family:var(--display);font-weight:700;font-size:17px;}
+  .nav-links{display:flex;gap:10px;align-items:center;}
+  .btn-nav{font-family:var(--sans);font-weight:500;font-size:14px;
+    padding:8px 18px;border-radius:10px;border:0;cursor:pointer;
+    text-decoration:none;display:inline-block;}
+  .btn-outline{background:white;border:1px solid var(--stroke-strong);color:var(--ink);}
+  .btn-outline:hover{background:var(--blue-50);border-color:var(--blue-300);color:var(--blue-700);}
+  .btn-danger-sm{background:#FEF2F4;border:1px solid #FBCFE8;color:var(--danger);}
+  .btn-danger-sm:hover{background:#FDE8EC;}
+
+  /* hero */
+  .hero{margin-bottom:36px;}
+  .hero-eyebrow{font-size:12px;font-weight:500;letter-spacing:0.06em;
+    text-transform:uppercase;color:var(--blue-600);margin-bottom:8px;}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,42px);
+    letter-spacing:-0.03em;margin-bottom:6px;}
+  .hero-sub{font-size:15px;color:var(--ink-mute);}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  @media(max-width:700px){.stats{grid-template-columns:1fr 1fr;}}
+  .stat-card{background:var(--panel);backdrop-filter:blur(16px);
+    border:1px solid var(--stroke);border-radius:18px;padding:22px 20px;
+    box-shadow:var(--shadow-md);}
+  .stat-label{font-size:11px;font-weight:500;letter-spacing:0.07em;
+    text-transform:uppercase;color:var(--ink-mute);margin-bottom:8px;}
+  .stat-value{font-family:var(--display);font-weight:700;font-size:28px;
+    letter-spacing:-0.02em;color:var(--blue-700);}
+  .stat-sub{font-size:12px;color:var(--ink-mute);margin-top:4px;}
+
+  /* trend badge */
+  .trend{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+    border-radius:999px;font-size:13px;font-weight:600;}
+  .trend.improving{background:#ECFDF5;color:var(--success);border:1px solid #A7F3D0;}
+  .trend.stable{background:var(--blue-50);color:var(--blue-700);border:1px solid var(--blue-200);}
+  .trend.worsening{background:#FEF2F4;color:var(--danger);border:1px solid #FBCFE8;}
+  .trend.insufficient{background:#F9FAFB;color:var(--ink-mute);border:1px solid var(--stroke);}
+
+  /* chart panel */
+  .panel{background:var(--panel);backdrop-filter:blur(16px);
+    border:1px solid var(--stroke);border-radius:22px;padding:28px;
+    box-shadow:var(--shadow-md);margin-bottom:24px;}
+  .panel-title{font-family:var(--display);font-weight:600;font-size:18px;
+    letter-spacing:-0.01em;margin-bottom:20px;}
+  .chart-wrap{position:relative;height:280px;}
+
+  /* empty state */
+  .empty{text-align:center;padding:60px 20px;color:var(--ink-mute);}
+  .empty-icon{font-size:40px;margin-bottom:12px;}
+  .empty h3{font-family:var(--display);font-size:20px;margin-bottom:8px;color:var(--ink);}
+  .empty p{font-size:14px;line-height:1.6;}
+  .empty a{color:var(--blue-600);font-weight:500;text-decoration:none;}
+  .empty a:hover{text-decoration:underline;}
+
+  /* readings table */
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-mute);padding:10px 12px;text-align:left;
+    border-bottom:1px solid var(--stroke);}
+  td{padding:12px 12px;border-bottom:1px solid var(--stroke);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(239,246,255,0.6);}
+  .prob-bar{height:6px;border-radius:999px;
+    background:linear-gradient(90deg,#D1FAE5 0%,#FEF3C7 50%,#FECACA 100%);
+    position:relative;width:120px;overflow:hidden;}
+  .prob-fill{position:absolute;top:0;left:0;bottom:0;width:3px;
+    background:var(--ink);border-radius:2px;transform:translateX(-50%);}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;
+    font-size:11px;font-weight:600;}
+  .badge.pd{background:#FEF2F4;color:var(--danger);}
+  .badge.healthy{background:#ECFDF5;color:var(--success);}
+  .notes-cell{max-width:180px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;color:var(--ink-mute);font-style:italic;font-size:13px;}
+
+  .loading{text-align:center;padding:40px;color:var(--ink-mute);}
+  .spin{display:inline-block;width:20px;height:20px;border-radius:50%;
+    border:2px solid var(--blue-200);border-top-color:var(--blue-600);
+    animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="bg"><div class="blob b1"></div><div class="blob b2"></div></div>
+
+<div class="wrap">
+  <nav>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+        </svg>
+      </div>
+      <span class="brand-name">Voice<span style="color:var(--blue-600)">·</span>PD</span>
+    </div>
+    <div class="nav-links">
+      <a href="/" class="btn-nav btn-outline">← Analyser</a>
+      <button class="btn-nav btn-danger-sm" onclick="logout()">Sign out</button>
+    </div>
+  </nav>
+
+  <div id="main-content">
+    <div class="loading"><span class="spin"></span><br/><br/>Loading your data...</div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem("pvd_token");
+if (!token) { window.location.href = "/login"; }
+
+function logout() {
+  localStorage.removeItem("pvd_token");
+  localStorage.removeItem("pvd_name");
+  window.location.href = "/";
+}
+
+function authHeaders() {
+  return {"Authorization": "Bearer " + token, "Content-Type": "application/json"};
+}
+
+function fmt(ts) {
+  const d = new Date(ts + (ts.endsWith("Z") ? "" : "Z"));
+  return d.toLocaleDateString("en-IN", {day:"numeric", month:"short", year:"numeric"});
+}
+
+function fmtFull(ts) {
+  const d = new Date(ts + (ts.endsWith("Z") ? "" : "Z"));
+  return d.toLocaleString("en-IN", {day:"numeric", month:"short", year:"numeric",
+    hour:"2-digit", minute:"2-digit"});
+}
+
+function trendBadge(trend) {
+  const map = {
+    improving: ["improving", "↓ Improving"],
+    stable: ["stable", "→ Stable"],
+    worsening: ["worsening", "↑ Worsening"],
+    insufficient_data: ["insufficient", "Not enough data yet"],
+  };
+  const [cls, label] = map[trend] || ["insufficient", "Unknown"];
+  return `<span class="trend ${cls}">${label}</span>`;
+}
+
+async function loadDashboard() {
+  try {
+    const [meRes, readingsRes, statsRes] = await Promise.all([
+      fetch("/api/me", {headers: authHeaders()}),
+      fetch("/api/readings", {headers: authHeaders()}),
+      fetch("/api/stats", {headers: authHeaders()}),
+    ]);
+
+    if (meRes.status === 401) { logout(); return; }
+
+    const me = await meRes.json();
+    const readings = await readingsRes.json();
+    const stats = await statsRes.json();
+
+    renderDashboard(me, readings, stats);
+  } catch(e) {
+    document.getElementById("main-content").innerHTML =
+      '<div class="loading" style="color:#DC2B4C">Failed to load data. Please refresh.</div>';
+  }
+}
+
+function renderDashboard(me, readings, stats) {
+  const total = stats.total;
+  const avgP = stats.avg_probability !== null ? (stats.avg_probability * 100).toFixed(1) + "%" : "—";
+  const roll7 = stats.rolling_avg_7 !== null ? (stats.rolling_avg_7 * 100).toFixed(1) + "%" : "—";
+
+  const html = `
+    <div class="hero">
+      <div class="hero-eyebrow">Personal dashboard</div>
+      <h1>Welcome back, ${me.name.split(" ")[0]} 👋</h1>
+      <div class="hero-sub">${me.email} · member since ${fmt(me.created_at)}</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total readings</div>
+        <div class="stat-value">${total}</div>
+        <div class="stat-sub">voice samples analysed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Overall avg P(PD)</div>
+        <div class="stat-value">${avgP}</div>
+        <div class="stat-sub">across all readings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last 7 readings avg</div>
+        <div class="stat-value">${roll7}</div>
+        <div class="stat-sub">rolling average</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Trend</div>
+        <div style="margin-top:6px">${trendBadge(stats.trend)}</div>
+        <div class="stat-sub" style="margin-top:8px">based on ${total} reading${total !== 1 ? "s" : ""}</div>
+      </div>
+    </div>
+
+    ${total === 0 ? `
+    <div class="panel">
+      <div class="empty">
+        <div class="empty-icon">🎙️</div>
+        <h3>No readings yet</h3>
+        <p>Go to the <a href="/">analyser</a>, record your voice, and save your first reading.<br/>
+        Your trend graph will appear here once you have at least 2 readings.</p>
+      </div>
+    </div>` : `
+    <div class="panel">
+      <div class="panel-title">P(PD) over time</div>
+      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    </div>`}
+
+    ${total > 0 ? `
+    <div class="panel">
+      <div class="panel-title">Reading history</div>
+      ${buildTable(readings)}
+    </div>` : ""}
+  `;
+
+  document.getElementById("main-content").innerHTML = html;
+
+  if (total > 0) renderChart(readings, stats);
+}
+
+function buildTable(readings) {
+  if (!readings.length) return '<div class="empty"><p>No readings yet.</p></div>';
+  const rows = readings.slice(0, 50).map(r => {
+    const pct = (r.probability_pd * 100).toFixed(1);
+    const badge = r.prediction === 1
+      ? '<span class="badge pd">PD indicators</span>'
+      : '<span class="badge healthy">Healthy</span>';
+    const notes = r.notes
+      ? `<span title="${r.notes}">${r.notes.slice(0, 40)}${r.notes.length > 40 ? "…" : ""}</span>`
+      : '<span style="color:#aaa">—</span>';
+    return `<tr>
+      <td>${fmtFull(r.timestamp)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="prob-bar"><div class="prob-fill" style="left:${pct}%"></div></div>
+          <span style="font-weight:600;font-variant-numeric:tabular-nums">${pct}%</span>
+        </div>
+      </td>
+      <td>${badge}</td>
+      <td style="color:var(--ink-mute)">${r.audio_duration_s}s</td>
+      <td class="notes-cell">${notes}</td>
+    </tr>`;
+  }).join("");
+
+  return `<table>
+    <thead><tr>
+      <th>Date & time</th><th>P(PD)</th><th>Result</th>
+      <th>Duration</th><th>Notes</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function renderChart(readings, stats) {
+  // Readings arrive newest-first — reverse for chart (oldest → newest)
+  const chrono = [...readings].reverse();
+  const labels = chrono.map(r => fmt(r.timestamp));
+  const probs = chrono.map(r => +(r.probability_pd * 100).toFixed(1));
+
+  // Rolling 7-reading average
+  const rolling = probs.map((_, i) => {
+    const window = probs.slice(Math.max(0, i - 6), i + 1);
+    return +(window.reduce((a, b) => a + b, 0) / window.length).toFixed(1);
+  });
+
+  const ctx = document.getElementById("chart").getContext("2d");
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "P(PD) %",
+          data: probs,
+          borderColor: "#2563EB",
+          backgroundColor: "rgba(37,99,235,0.08)",
+          borderWidth: 2.5,
+          pointBackgroundColor: probs.map(p => p >= 38 ? "#DC2B4C" : "#0EA371"),
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: true,
+          tension: 0.3,
+        },
+        {
+          label: "7-reading avg",
+          data: rolling,
+          borderColor: "#8B5CF6",
+          borderWidth: 2,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3,
+        },
+        {
+          label: "Threshold (38%)",
+          data: new Array(probs.length).fill(38),
+          borderColor: "rgba(220,43,76,0.4)",
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {mode: "index", intersect: false},
+      plugins: {
+        legend: {
+          labels: {font: {family: "Inter", size: 12}, boxWidth: 16, padding: 16}
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {color: "rgba(13,37,88,0.06)"},
+          ticks: {font: {family: "Inter", size: 11}, color: "#6B7796",
+                  maxTicksLimit: 8, maxRotation: 30}
+        },
+        y: {
+          min: 0, max: 100,
+          grid: {color: "rgba(13,37,88,0.06)"},
+          ticks: {font: {family: "Inter", size: 11}, color: "#6B7796",
+                  callback: v => v + "%"}
+        },
+      },
+    },
+  });
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

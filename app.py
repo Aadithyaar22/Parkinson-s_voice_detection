@@ -1,18 +1,10 @@
 """
-Parkinson's Voice Analyser - Flask web server.
+Parkinson's Voice Analyser — Flask server.
 
-Supports two backends, auto-detected from the saved feature list:
-
-  * Hand-crafted:  22 UCI features or 22+34 extended features. Fast,
-    no torch dependency. Training done via src/train_v2.py or
-    scripts/tune_italian.py.
-
-  * wav2vec2:      1024-dim self-supervised embeddings. Slower
-    (model load ~1.2GB, first request warms MPS). Requires torch +
-    transformers. Training done via scripts/wav2vec2_experiment.py.
-
-The backend is determined by the contents of models/feature_names.pkl -
-if it starts with 'emb_', we're in wav2vec2 mode; otherwise hand-crafted.
+Backends: wav2vec2-XLS-R (default) or hand-crafted MDVP features.
+Auth:     JWT-based email + password (MongoDB Atlas).
+Features: /predict, /explain (Groq), /api/register, /api/login,
+          /api/readings (save + get), /api/stats, /dashboard.
 """
 from __future__ import annotations
 
@@ -27,30 +19,31 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import (Flask, Response, jsonify, render_template, request,
+                   send_from_directory, stream_with_context)
 from werkzeug.utils import secure_filename
 
 from src.feature_extractor import FEATURE_NAMES as FULL_FEATURE_NAMES, extract_features
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-UPLOAD_DIR = PROJECT_ROOT / "uploads"
-MODEL_DIR = PROJECT_ROOT / "models"
+UPLOAD_DIR   = PROJECT_ROOT / "uploads"
+MODEL_DIR    = PROJECT_ROOT / "models"
 UPLOAD_DIR.mkdir(exist_ok=True)
 ALLOWED_EXT = {"wav", "mp3", "flac", "ogg", "webm", "m4a"}
-MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
 # ---------------------------------------------------------------------------
-# Load model + feature list
+# Load model
 # ---------------------------------------------------------------------------
 PIPELINE_PATH = MODEL_DIR / "parkinsons_pipeline.joblib"
 FEATURES_PATH = MODEL_DIR / "feature_names.pkl"
-REPORT_PATH = MODEL_DIR / "training_report.json"
+REPORT_PATH   = MODEL_DIR / "training_report.json"
 
-pipeline = None
-MODEL_FEATURES = FULL_FEATURE_NAMES   # default hand-crafted
+pipeline       = None
+MODEL_FEATURES = FULL_FEATURE_NAMES
 TUNED_THRESHOLD = 0.5
 training_report = {}
-BACKEND = "handcrafted"               # "handcrafted" | "wav2vec2"
+BACKEND = "handcrafted"
 
 if PIPELINE_PATH.exists():
     pipeline = joblib.load(PIPELINE_PATH)
@@ -64,27 +57,23 @@ if REPORT_PATH.exists():
         TUNED_THRESHOLD = float(training_report["tuned_threshold"])
         print(f"[app] using tuned threshold: {TUNED_THRESHOLD:.3f}")
 
-# Detect backend
-if (
-    isinstance(MODEL_FEATURES, list)
-    and len(MODEL_FEATURES) > 0
-    and all(isinstance(f, str) and f.startswith("emb_") for f in MODEL_FEATURES[:3])
-):
+if (isinstance(MODEL_FEATURES, list) and len(MODEL_FEATURES) > 0
+        and all(isinstance(f, str) and f.startswith("emb_")
+                for f in MODEL_FEATURES[:3])):
     BACKEND = "wav2vec2"
     print(f"[app] backend: wav2vec2 ({len(MODEL_FEATURES)}-dim embeddings)")
     from src import wav2vec2_inference
     if not wav2vec2_inference.is_available():
-        print(f"[app] WARNING: wav2vec2 backend selected but not functional:")
-        print(f"[app]   {wav2vec2_inference.load_error()}")
-        print(f"[app] The /predict endpoint will return 503 until fixed.")
+        print(f"[app] WARNING: wav2vec2 not yet loaded — will load on first request")
 else:
     print(f"[app] backend: handcrafted ({len(MODEL_FEATURES)} features)")
 
-
-
-# Groq availability
 GROQ_AVAILABLE = bool(os.environ.get("GROQ_API_KEY", ""))
 print(f"[app] Groq explanations: {'enabled' if GROQ_AVAILABLE else 'disabled (set GROQ_API_KEY)'}")
+
+MONGO_AVAILABLE = bool(os.environ.get("MONGODB_URI", ""))
+print(f"[app] MongoDB: {'enabled' if MONGO_AVAILABLE else 'disabled (set MONGODB_URI)'}")
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -94,7 +83,6 @@ def _allowed(filename: str) -> bool:
 
 
 def _transcode_to_wav(src: str) -> str:
-    """Use ffmpeg to produce a 16 kHz mono WAV."""
     dst_fd, dst = tempfile.mkstemp(suffix=".wav", prefix="conv_", dir=UPLOAD_DIR)
     os.close(dst_fd)
     cmd = ["ffmpeg", "-y", "-i", src, "-ar", "16000", "-ac", "1", dst]
@@ -121,72 +109,60 @@ def _jsonify_floats(d: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Backend-specific inference
+# Inference
 # ---------------------------------------------------------------------------
 def _predict_handcrafted(wav_path: str) -> dict:
     need_extended = len(MODEL_FEATURES) > 22
-    feats = extract_features(
-        wav_path,
-        compute_d2=True, compute_rpde=True,
-        extended=need_extended,
-    )
+    feats = extract_features(wav_path, compute_d2=True, compute_rpde=True,
+                             extended=need_extended)
     feats_json = _jsonify_floats(feats)
-
     row = [feats.get(k, float("nan")) for k in MODEL_FEATURES]
     X_row = pd.DataFrame([row], columns=MODEL_FEATURES).astype(float)
     proba = float(pipeline.predict_proba(X_row)[0, 1])
-
     measured = [k for k in MODEL_FEATURES if feats_json.get(k) is not None]
-    imputed = [k for k in MODEL_FEATURES if feats_json.get(k) is None]
-    return {
-        "probability_pd": proba,
-        "features": feats_json,
-        "feature_order": FULL_FEATURE_NAMES,
-        "model_features": list(MODEL_FEATURES),
-        "n_measured": len(measured),
-        "n_imputed": len(imputed),
-        "n_model_features": len(MODEL_FEATURES),
-        "imputed_features": imputed,
-    }
+    imputed  = [k for k in MODEL_FEATURES if feats_json.get(k) is None]
+    return {"probability_pd": proba, "features": feats_json,
+            "feature_order": FULL_FEATURE_NAMES, "model_features": list(MODEL_FEATURES),
+            "n_measured": len(measured), "n_imputed": len(imputed),
+            "n_model_features": len(MODEL_FEATURES), "imputed_features": imputed}
 
 
 def _predict_wav2vec2(wav_path: str) -> dict:
     from src import wav2vec2_inference
     if not wav2vec2_inference.is_available():
-        raise RuntimeError(
-            f"wav2vec2 not available: {wav2vec2_inference.load_error()}"
-        )
+        raise RuntimeError(f"wav2vec2 not available: {wav2vec2_inference.load_error()}")
     emb = wav2vec2_inference.extract_embedding(wav_path)
     X_row = pd.DataFrame([emb.tolist()], columns=MODEL_FEATURES).astype(float)
     proba = float(pipeline.predict_proba(X_row)[0, 1])
-    return {
-        "probability_pd": proba,
-        "features": {},
-        "feature_order": [],
-        "model_features": list(MODEL_FEATURES),
-        "n_measured": len(MODEL_FEATURES),
-        "n_imputed": 0,
-        "n_model_features": len(MODEL_FEATURES),
-        "imputed_features": [],
-    }
+    return {"probability_pd": proba, "features": {}, "feature_order": [],
+            "model_features": list(MODEL_FEATURES), "n_measured": len(MODEL_FEATURES),
+            "n_imputed": 0, "n_model_features": len(MODEL_FEATURES), "imputed_features": []}
 
 
 # ---------------------------------------------------------------------------
-# Flask routes
+# Flask app
 # ---------------------------------------------------------------------------
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_BYTES
 
 
+# ── Pages ──────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
-    return render_template(
-        "index.html",
-        report=training_report,
-        model_loaded=pipeline is not None,
-        backend=BACKEND,
-        groq_available=GROQ_AVAILABLE,
-    )
+    return render_template("index.html", report=training_report,
+                           model_loaded=pipeline is not None, backend=BACKEND,
+                           groq_available=GROQ_AVAILABLE,
+                           mongo_available=MONGO_AVAILABLE)
+
+
+@app.route("/login")
+def login_page():
+    return render_template("login.html")
+
+
+@app.route("/dashboard")
+def dashboard_page():
+    return render_template("dashboard.html")
 
 
 @app.route("/static/<path:p>")
@@ -194,72 +170,172 @@ def _static(p):
     return send_from_directory("static", p)
 
 
-@app.route("/health", methods=["GET"])
+# ── Health ──────────────────────────────────────────────────────────────────
+@app.route("/health")
 def health():
     chosen = (training_report.get("chosen_model")
-              or training_report.get("best_classifier")
-              or "unknown")
-    h = {
-        "ok": True,
-        "model_loaded": pipeline is not None,
-        "backend": BACKEND,
-        "n_features": len(MODEL_FEATURES),
-        "chosen_model": chosen,
-        "threshold": TUNED_THRESHOLD,
-    }
-    if BACKEND == "wav2vec2":
-        from src import wav2vec2_inference
-        h["wav2vec2_available"] = wav2vec2_inference.is_available()
-        if not wav2vec2_inference.is_available():
-            h["wav2vec2_error"] = wav2vec2_inference.load_error()
+              or training_report.get("best_classifier") or "unknown")
+    h = {"ok": True, "model_loaded": pipeline is not None, "backend": BACKEND,
+         "n_features": len(MODEL_FEATURES), "chosen_model": chosen,
+         "threshold": TUNED_THRESHOLD, "groq_available": GROQ_AVAILABLE,
+         "mongo_available": MONGO_AVAILABLE}
     return jsonify(h)
 
 
+# ── Auth API ────────────────────────────────────────────────────────────────
+@app.route("/api/register", methods=["POST"])
+def api_register():
+    if not MONGO_AVAILABLE:
+        return jsonify({"message": "Database not configured."}), 503
+    body = request.get_json(silent=True) or {}
+    name     = (body.get("name") or "").strip()
+    email    = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+    if not name or not email or not password:
+        return jsonify({"message": "Name, email and password are required."}), 400
+    if len(password) < 8:
+        return jsonify({"message": "Password must be at least 8 characters."}), 400
+    try:
+        from src.database import create_user, get_user_by_email
+        from src.auth import hash_password, generate_token
+        if get_user_by_email(email):
+            return jsonify({"message": "An account with that email already exists."}), 409
+        hashed = hash_password(password)
+        user = create_user(email, hashed, name)
+        token = generate_token(str(user["_id"]), email, name)
+        return jsonify({"token": token, "name": name, "email": email})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"message": f"Registration failed: {e}"}), 500
+
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    if not MONGO_AVAILABLE:
+        return jsonify({"message": "Database not configured."}), 503
+    body = request.get_json(silent=True) or {}
+    email    = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+    if not email or not password:
+        return jsonify({"message": "Email and password are required."}), 400
+    try:
+        from src.database import get_user_by_email, update_last_login
+        from src.auth import verify_password, generate_token
+        user = get_user_by_email(email)
+        if not user or not verify_password(password, user["password_hash"]):
+            return jsonify({"message": "Invalid email or password."}), 401
+        uid = str(user["_id"])
+        update_last_login(uid)
+        token = generate_token(uid, email, user["name"])
+        return jsonify({"token": token, "name": user["name"], "email": email})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"message": f"Login failed: {e}"}), 500
+
+
+@app.route("/api/me")
+def api_me():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    try:
+        from src.database import get_user_by_id
+        user = get_user_by_id(payload["user_id"])
+        if not user:
+            return jsonify({"message": "User not found."}), 404
+        return jsonify({
+            "name": user["name"],
+            "email": user["email"],
+            "created_at": user["created_at"].isoformat(),
+        })
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+# ── Readings API ─────────────────────────────────────────────────────────────
+@app.route("/api/readings", methods=["POST"])
+def api_save_reading():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    body = request.get_json(silent=True) or {}
+    try:
+        from src.database import save_reading
+        reading = save_reading(
+            user_id=payload["user_id"],
+            probability_pd=float(body.get("probability_pd", 0)),
+            prediction=int(body.get("prediction", 0)),
+            confidence_pct=float(body.get("confidence_pct", 0)),
+            audio_duration_s=float(body.get("audio_duration_s", 0)),
+            backend=body.get("backend", BACKEND),
+            model=body.get("model", "unknown"),
+            notes=body.get("notes", ""),
+        )
+        return jsonify(reading)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"message": str(e)}), 500
+
+
+@app.route("/api/readings", methods=["GET"])
+def api_get_readings():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    try:
+        from src.database import get_readings
+        return jsonify(get_readings(payload["user_id"]))
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@app.route("/api/stats")
+def api_stats():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    try:
+        from src.database import get_stats
+        return jsonify(get_stats(payload["user_id"]))
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+# ── Predict ──────────────────────────────────────────────────────────────────
 @app.route("/predict", methods=["POST"])
 def predict():
     if pipeline is None:
-        return jsonify({
-            "error": "model_not_loaded",
-            "message": "No pipeline found. Train a model first."
-        }), 503
-
+        return jsonify({"error": "model_not_loaded",
+                        "message": "No pipeline found."}), 503
     if BACKEND == "wav2vec2":
         from src import wav2vec2_inference
         if not wav2vec2_inference.is_available():
-            return jsonify({
-                "error": "wav2vec2_unavailable",
-                "message": wav2vec2_inference.load_error(),
-                "hint": "pip install -r requirements_wav2vec2.txt",
-            }), 503
-
+            return jsonify({"error": "wav2vec2_unavailable",
+                            "message": wav2vec2_inference.load_error()}), 503
     if "audio" not in request.files:
         return jsonify({"error": "no_file", "message": "Missing 'audio' field"}), 400
     f = request.files["audio"]
     if not f.filename or not _allowed(f.filename):
-        return jsonify({
-            "error": "bad_filename",
-            "message": f"Upload file with extension in {sorted(ALLOWED_EXT)}",
-        }), 400
+        return jsonify({"error": "bad_filename",
+                        "message": f"Allowed: {sorted(ALLOWED_EXT)}"}), 400
 
     fname = secure_filename(f.filename)
     saved = str(UPLOAD_DIR / fname)
     f.save(saved)
     wav_path = saved
-
     try:
         ext = fname.rsplit(".", 1)[1].lower()
         if ext != "wav":
             wav_path = _transcode_to_wav(saved)
-
-        if BACKEND == "wav2vec2":
-            result = _predict_wav2vec2(wav_path)
-        else:
-            result = _predict_handcrafted(wav_path)
-
+        result = _predict_wav2vec2(wav_path) if BACKEND == "wav2vec2" \
+            else _predict_handcrafted(wav_path)
         proba = result["probability_pd"]
-        pred = int(proba >= TUNED_THRESHOLD)
-
-        response = {
+        pred  = int(proba >= TUNED_THRESHOLD)
+        return jsonify({
             "prediction": pred,
             "probability_pd": proba,
             "threshold_used": TUNED_THRESHOLD,
@@ -268,23 +344,18 @@ def predict():
                       else "No Parkinson's indicators detected"),
             "backend": BACKEND,
             "model": (training_report.get("chosen_model")
-                      or training_report.get("best_classifier")
-                      or "unknown"),
-            "disclaimer": (
-                "Research/educational prototype only. NOT a diagnostic device. "
-                "Voice screening has inherent limitations; any clinical decision "
-                "must be made by a qualified physician."
-            ),
+                      or training_report.get("best_classifier") or "unknown"),
+            "groq_available": GROQ_AVAILABLE,
+            "mongo_available": MONGO_AVAILABLE,
+            "disclaimer": ("Research/educational prototype only. NOT a diagnostic device. "
+                           "Voice screening has inherent limitations; any clinical decision "
+                           "must be made by a qualified physician."),
             **result,
-        }
-        return jsonify(response)
-
+        })
     except Exception as e:
         traceback.print_exc()
-        return jsonify({
-            "error": "prediction_failed",
-            "message": f"{type(e).__name__}: {e}",
-        }), 500
+        return jsonify({"error": "prediction_failed",
+                        "message": f"{type(e).__name__}: {e}"}), 500
     finally:
         for p in {saved, wav_path}:
             if p and os.path.exists(p):
@@ -294,6 +365,7 @@ def predict():
                     pass
 
 
+# ── Explain ──────────────────────────────────────────────────────────────────
 @app.route("/explain", methods=["POST"])
 def explain():
     if not GROQ_AVAILABLE:
@@ -312,8 +384,7 @@ def explain():
         ):
             chunks.append(chunk)
         text = "".join(chunks)
-        # Keep only safe printable characters
-        text = "".join(c if (32 <= ord(c) < 127 or c == " ") else " " for c in text)
+        text = "".join(c if (32 <= ord(c) < 127 or c in " \n") else " " for c in text)
         text = " ".join(text.split())
         return jsonify({"explanation": text})
     except Exception as e:
@@ -321,6 +392,9 @@ def explain():
         return jsonify({"error": "explain_failed", "message": msg}), 500
 
 
+# ── Run ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    host = os.environ.get("HOST", "0.0.0.0")
+    print(f"[app] starting on {host}:{port}")
+    app.run(host=host, port=port, debug=False)
