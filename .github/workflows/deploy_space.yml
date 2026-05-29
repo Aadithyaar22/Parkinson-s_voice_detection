@@ -52,15 +52,22 @@ jobs:
     needs: test
 
     steps:
-      - name: Checkout pva2
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Assemble space_build/
         run: |
-          mkdir -p space_build/{src,models,templates,static,data,scripts,uploads}
+          mkdir -p space_build/src
+          mkdir -p space_build/models
+          mkdir -p space_build/templates
+          mkdir -p space_build/static
+          mkdir -p space_build/data
+          mkdir -p space_build/scripts
+          mkdir -p space_build/uploads
 
+          # ── src: all runtime modules ──────────────────────────────────────
           for f in \
             src/__init__.py \
             src/audio_utils.py \
@@ -71,28 +78,48 @@ jobs:
             src/llm_explainer.py \
             src/database.py \
             src/auth.py; do
-            [ -f "$f" ] && cp "$f" "space_build/$f" || echo "WARN: $f not found"
+            [ -f "$f" ] && cp "$f" "space_build/$f" && echo "  ✓ $f" || echo "  WARN: $f not found"
           done
 
+          # ── Flask app ─────────────────────────────────────────────────────
           cp app.py space_build/
+          echo "  ✓ app.py"
+
+          # ── Trained model ─────────────────────────────────────────────────
           cp models/parkinsons_pipeline.joblib space_build/models/
           cp models/feature_names.pkl          space_build/models/
           cp models/training_report.json       space_build/models/
-          cp templates/index.html    space_build/templates/
+          echo "  ✓ models/"
+
+          # ── All templates ─────────────────────────────────────────────────
+          cp templates/index.html     space_build/templates/
           cp templates/login.html     space_build/templates/
           cp templates/dashboard.html space_build/templates/
-          [ -d static ] && cp -r static/. space_build/static/ || true
-          cp data/italian_w2v2.csv             space_build/data/
-          cp scripts/refit_w2v2_local.py       space_build/scripts/
-          cp parkinsons_space/README.md        space_build/README.md
-          cp parkinsons_space/Dockerfile       space_build/Dockerfile
-          cp parkinsons_space/.dockerignore    space_build/.dockerignore
-          cp parkinsons_space/requirements.txt space_build/requirements.txt
-          cp parkinsons_space/requirements_wav2vec2.txt space_build/
+          echo "  ✓ templates/"
+
+          # ── Static assets ─────────────────────────────────────────────────
+          [ -d static ] && cp -r static/. space_build/static/ && echo "  ✓ static/" || true
+
+          # ── Data (needed for refit step in Dockerfile) ────────────────────
+          cp data/italian_w2v2.csv space_build/data/
+          echo "  ✓ data/italian_w2v2.csv"
+
+          # ── Scripts ───────────────────────────────────────────────────────
+          cp scripts/refit_w2v2_local.py space_build/scripts/
+          echo "  ✓ scripts/refit_w2v2_local.py"
+
+          # ── Space-specific files ──────────────────────────────────────────
+          cp parkinsons_space/README.md                  space_build/README.md
+          cp parkinsons_space/Dockerfile                 space_build/Dockerfile
+          cp parkinsons_space/.dockerignore              space_build/.dockerignore
+          cp parkinsons_space/requirements.txt           space_build/requirements.txt
+          cp parkinsons_space/requirements_wav2vec2.txt  space_build/requirements_wav2vec2.txt
+          echo "  ✓ space files"
 
           touch space_build/uploads/.gitkeep
 
-          echo "=== space_build contents ==="
+          echo ""
+          echo "=== Final space_build contents ==="
           find space_build -type f | sort
 
       - name: Set up Python
@@ -105,8 +132,10 @@ jobs:
 
       - name: Push to HuggingFace Spaces
         env:
-          HF_TOKEN:     ${{ secrets.HF_TOKEN }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          HF_TOKEN:      ${{ secrets.HF_TOKEN }}
+          GROQ_API_KEY:  ${{ secrets.GROQ_API_KEY }}
+          MONGODB_URI:   ${{ secrets.MONGODB_URI }}
+          JWT_SECRET:    ${{ secrets.JWT_SECRET }}
         run: |
           python - <<'PYEOF'
           import os
@@ -118,33 +147,30 @@ jobs:
           repo_id  = f"{username}/{space}"
           api      = HfApi(token=token)
 
-          groq_key = os.environ.get("GROQ_API_KEY", "")
-          for key in ["MONGODB_URI", "JWT_SECRET"]:
+          # Push all secrets to the Space
+          for key in ["GROQ_API_KEY", "MONGODB_URI", "JWT_SECRET"]:
               val = os.environ.get(key, "")
               if val:
-                  try: api.add_space_secret(repo_id=repo_id, key=key, value=val)
-                  except: pass
-          if groq_key:
-              try:
-                  api.add_space_secret(repo_id=repo_id, key="GROQ_API_KEY", value=groq_key)
-                  print(f"✓ GROQ_API_KEY secret set on {repo_id}")
-              except Exception as e:
-                  print(f"! Could not set GROQ secret: {e}")
+                  try:
+                      api.add_space_secret(repo_id=repo_id, key=key, value=val)
+                      print(f"  ✓ secret {key} set")
+                  except Exception as e:
+                      print(f"  ! {key}: {e}")
 
-          print(f"Uploading space_build/ → {repo_id} ...")
+          print(f"\nUploading space_build/ → {repo_id} ...")
           api.upload_folder(
               folder_path="space_build",
               repo_id=repo_id,
               repo_type="space",
-              commit_message=f"Deploy from GitHub Actions",
+              commit_message="Deploy from GitHub Actions",
           )
-          print(f"\n✅ Live at: https://huggingface.co/spaces/{repo_id}")
+          print(f"\n✅ Live: https://huggingface.co/spaces/{repo_id}")
           PYEOF
 
-      - name: Print live URL
+      - name: Summary
         run: |
           echo ""
-          echo "════════════════════════════════════════════════════════"
+          echo "════════════════════════════════════════════════════"
           echo "  DEPLOYED"
           echo "  https://huggingface.co/spaces/${{ env.HF_USERNAME }}/${{ env.HF_SPACE_NAME }}"
-          echo "════════════════════════════════════════════════════════"
+          echo "════════════════════════════════════════════════════"
