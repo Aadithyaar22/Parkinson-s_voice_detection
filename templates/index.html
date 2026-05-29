@@ -484,22 +484,6 @@
     * { animation: none !important; transition: none !important; }
   }
 
-  .btn-groq{background:linear-gradient(135deg,#7c3aed,#5b21b6);color:white;
-    box-shadow:0 4px 14px rgba(124,58,237,0.3),inset 0 1px 0 rgba(255,255,255,0.22);}
-  .btn-groq:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,58,237,0.45);}
-  .groq-panel{margin-top:20px;border-radius:14px;overflow:hidden;border:1px solid rgba(124,58,237,0.20);}
-  .groq-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
-    background:linear-gradient(135deg,rgba(124,58,237,0.06),rgba(91,33,182,0.04));
-    border-bottom:1px solid rgba(124,58,237,0.12);}
-  .groq-title{display:flex;align-items:center;gap:8px;font-family:var(--display);
-    font-weight:600;font-size:14px;color:#5b21b6;}
-  .groq-body{padding:16px 18px;background:rgba(124,58,237,0.02);font-size:14px;
-    color:var(--ink-soft);line-height:1.7;min-height:48px;}
-  .groq-cursor{display:inline-block;width:2px;height:14px;background:#7c3aed;
-    animation:blink 1s infinite;vertical-align:middle;margin-left:2px;}
-  .groq-empty{color:var(--ink-mute);font-style:italic;}
-  @keyframes blink{50%{opacity:0;}}
-
 
   .save-panel{margin-top:18px;padding:18px;border-radius:14px;
     background:var(--blue-50);border:1px solid var(--blue-100);}
@@ -698,24 +682,6 @@
           </div>
         </div>
 
-        
-        {% if groq_available %}
-        <div class="groq-panel">
-          <div class="groq-header">
-            <span class="groq-title">
-              ✦ AI Clinical Explanation
-              <span style="font-size:11px;opacity:0.7;font-weight:400">powered by Groq · Llama 3.3</span>
-            </span>
-            <button id="explainBtn" class="btn btn-groq" style="padding:8px 16px;font-size:13px">
-              ⚡ Explain this result
-            </button>
-          </div>
-          <div class="groq-body" id="groqBody">
-            <span class="groq-empty">Click "Explain this result" to get a plain-English explanation of what the model found in your voice.</span>
-          </div>
-        </div>
-        {% endif %}
-
         <div class="feat-summary" id="featureSummary"></div>
 
         <details>
@@ -775,7 +741,6 @@
 
 <script>
 window.__backend = {{ backend|tojson }};
-window.__groq = {{ groq_available|tojson }};
 window.__mongo = {{ mongo_available|tojson }};
 let lastResult = null;
 
