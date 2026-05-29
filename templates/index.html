@@ -922,7 +922,7 @@ if (explainBtn) {
   explainBtn.addEventListener("click", async () => {
     if (!lastResult) return;
     explainBtn.disabled = true;
-    explainBtn.textContent = "Thinking…";
+    explainBtn.textContent = "Thinking...";
     const body = document.getElementById("groqBody");
     body.innerHTML = '<span class="groq-cursor"></span>';
     try {
@@ -937,30 +937,22 @@ if (explainBtn) {
           backend: lastResult.backend,
         }),
       });
-      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      body.innerHTML = "";
-      let cursor = document.createElement("span");
-      cursor.className = "groq-cursor";
-      body.appendChild(cursor);
-      while (true) {
-        const {done, value} = await reader.read();
-        if (done) break;
-        const lines = decoder.decode(value, {stream: true}).split("\n");
-        for (const line of lines) {
-          if (!line.startsWith("data:")) continue;
-          const payload = line.slice(5).trim();
-          if (payload === "[DONE]") { cursor.remove(); break; }
-          if (payload.startsWith("[ERROR]")) { cursor.remove(); body.textContent = payload; break; }
-          body.insertBefore(document.createTextNode(payload + " "), cursor);
-        }
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "explain failed");
+      // Typewriter effect
+      body.textContent = "";
+      const words = data.explanation.split(" ");
+      let i = 0;
+      const interval = setInterval(() => {
+        if (i >= words.length) { clearInterval(interval); return; }
+        body.textContent += (i === 0 ? "" : " ") + words[i];
+        i++;
+      }, 25);
     } catch(err) {
-      body.innerHTML = '<span style="color:var(--danger)">Failed: ' + err.message + '</span>';
+      body.textContent = "Could not generate explanation: " + err.message;
     } finally {
       explainBtn.disabled = false;
-      explainBtn.textContent = "⚡ Explain again";
+      explainBtn.textContent = "Explain again";
     }
   });
 }

@@ -300,34 +300,25 @@ def explain():
         return jsonify({"error": "groq_not_configured",
                         "message": "Set GROQ_API_KEY to enable explanations."}), 503
     body = request.get_json(silent=True) or {}
-    from flask import Response, stream_with_context
-    def generate():
-        try:
-            from src.llm_explainer import explain_stream
-            for chunk in explain_stream(
-                float(body.get("probability_pd", 0.5)),
-                float(body.get("threshold_used", 0.5)),
-                int(body.get("prediction", 0)),
-                body.get("features", {}),
-                body.get("backend", BACKEND),
-            ):
-                safe = "".join(c if ord(c) < 128 else " " for c in chunk)
-                safe = safe.replace("\n", " ").replace("\r", " ")
-                if safe.strip():
-                    yield ("data: " + safe + "\n\n").encode("utf-8")
-        except Exception as e:
-            import traceback
-            msg = traceback.format_exc().replace("\n", " ")[-200:]
-            msg = "".join(c if ord(c) < 128 else "?" for c in msg)
-            yield ("data: [ERROR] " + msg + "\n\n").encode("utf-8")
-        finally:
-            yield b"data: [DONE]\n\n"
-    resp = Response(stream_with_context(generate()),
-                    mimetype="text/event-stream",
-                    headers={"Cache-Control": "no-cache",
-                             "X-Accel-Buffering": "no"})
-    resp.charset = "utf-8"
-    return resp
+    try:
+        from src.llm_explainer import explain_stream
+        chunks = []
+        for chunk in explain_stream(
+            float(body.get("probability_pd", 0.5)),
+            float(body.get("threshold_used", 0.5)),
+            int(body.get("prediction", 0)),
+            body.get("features", {}),
+            body.get("backend", BACKEND),
+        ):
+            chunks.append(chunk)
+        text = "".join(chunks)
+        # Keep only safe printable characters
+        text = "".join(c if (32 <= ord(c) < 127 or c == " ") else " " for c in text)
+        text = " ".join(text.split())
+        return jsonify({"explanation": text})
+    except Exception as e:
+        msg = "".join(c if ord(c) < 128 else "?" for c in str(e))
+        return jsonify({"error": "explain_failed", "message": msg}), 500
 
 
 if __name__ == "__main__":
