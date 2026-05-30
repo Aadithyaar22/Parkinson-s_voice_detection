@@ -7,7 +7,7 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Inter", sans-serif; color: #0B1533; background: white;
-         font-size: 13px; line-height: 1.5; padding: 40px; }
+         font-size: 13px; line-height: 1.5; padding: 40px; padding-bottom: 96px; }
 
   .header { display: flex; justify-content: space-between; align-items: flex-start;
             padding-bottom: 20px; border-bottom: 2px solid #1D4ED8; margin-bottom: 28px; }
@@ -50,15 +50,25 @@
                 border: 1px solid #FDE68A; border-radius: 8px;
                 font-size: 11px; color: #78350F; line-height: 1.6; }
 
-  .print-btn { position: fixed; bottom: 24px; right: 24px;
-               background: #1D4ED8; color: white; border: none; border-radius: 12px;
-               padding: 12px 24px; font-family: "Inter", sans-serif; font-weight: 600;
-               font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(29,78,216,0.4); }
-  .print-btn:hover { background: #1e40af; }
+  .save-bar { position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(16px);
+    border-top: 1px solid #E2E8F0;
+    box-shadow: 0 -4px 24px rgba(11,21,51,0.08); z-index: 100; }
+  .save-bar-inner { max-width: 900px; margin: 0 auto; padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .save-bar-title { font-family: "Space Grotesk", sans-serif; font-weight: 600;
+    font-size: 15px; color: #0B1533; margin-bottom: 2px; }
+  .save-bar-sub { font-size: 12px; color: #6B7796; }
+  .save-btn { display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; background: #0B1533; color: white; border: none;
+    border-radius: 10px; font-family: "Inter", sans-serif; font-weight: 600;
+    font-size: 14px; cursor: pointer; white-space: nowrap;
+    transition: all 0.18s; }
+  .save-btn:hover { background: #1D4ED8; transform: translateY(-1px); }
 
   @media print {
-    .print-btn { display: none; }
-    body { padding: 20px; }
+    .save-bar { display: none; }
+    body { padding: 20px; padding-bottom: 20px; }
   }
 </style>
 </head>
@@ -141,7 +151,23 @@
   trends across multiple sessions are required for any meaningful interpretation.
 </div>
 
-<button class="print-btn" onclick="window.print()">🖨️ Save as PDF</button>
+<div class="save-bar">
+  <div class="save-bar-inner">
+    <div class="save-bar-left">
+      <div class="save-bar-title">Voice·PD Patient Report</div>
+      <div class="save-bar-sub">Ready to save — use your browser's print dialog to export as PDF</div>
+    </div>
+    <button class="save-btn" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download as PDF
+    </button>
+  </div>
+</div>
 
 </body>
 </html>
