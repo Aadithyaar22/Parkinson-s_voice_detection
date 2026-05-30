@@ -1038,7 +1038,7 @@ function render(r) {
   if (r.backend === "wav2vec2") {
     featSummary.innerHTML =
       `Audio encoded as a <strong>${r.n_model_features}-dim</strong> embedding ` +
-      `via wav2vec2-XLS-R. Raw embeddings aren't human-interpretable, so no feature table is shown.`;
+      `via wav2vec2-XLS-R — a speech model pretrained on 128 languages including Hindi, Tamil, and Telugu. It captures deep acoustic patterns beyond what traditional features measure.`;
     const det = document.querySelector("details"); if (det) det.style.display = "none";
     return;
   }
