@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Voice·PD Patient Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;
+    --blue-600:#2563EB;--blue-700:#1D4ED8;
+    --ink:#0B1533;--ink-soft:#3E4A6F;--ink-mute:#6B7796;
+    --panel:rgba(255,255,255,0.85);--stroke:rgba(13,37,88,0.10);
+    --success:#0EA371;--danger:#DC2B4C;
+    --display:"Space Grotesk",system-ui,sans-serif;
+    --sans:"Inter",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);color:var(--ink);background:#F6F9FF;
+       min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 28px 80px;}
+
+  .report-header{background:white;border-radius:20px;padding:32px;
+    border:1px solid var(--stroke);margin-bottom:24px;
+    box-shadow:0 4px 16px rgba(16,38,90,0.07);}
+  .report-badge{display:inline-flex;align-items:center;gap:6px;
+    padding:5px 12px;border-radius:999px;background:var(--blue-50);
+    color:var(--blue-700);font-size:12px;font-weight:500;
+    border:1px solid var(--blue-200);margin-bottom:16px;}
+  .report-title{font-family:var(--display);font-weight:700;font-size:28px;
+    letter-spacing:-0.02em;margin-bottom:6px;}
+  .report-sub{font-size:14px;color:var(--ink-mute);}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  @media(max-width:600px){.stats{grid-template-columns:1fr 1fr;}}
+  .stat{background:white;border:1px solid var(--stroke);border-radius:14px;
+    padding:18px;box-shadow:0 2px 8px rgba(16,38,90,0.05);}
+  .stat-label{font-size:11px;font-weight:500;letter-spacing:0.06em;
+    text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px;}
+  .stat-value{font-family:var(--display);font-weight:700;font-size:24px;color:var(--blue-700);}
+
+  .panel{background:white;border:1px solid var(--stroke);border-radius:18px;
+    padding:24px;margin-bottom:20px;box-shadow:0 2px 8px rgba(16,38,90,0.05);}
+  .panel-title{font-family:var(--display);font-weight:600;font-size:17px;
+    margin-bottom:18px;color:var(--ink);}
+  .chart-wrap{height:260px;position:relative;}
+
+  .trend{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+    border-radius:999px;font-size:13px;font-weight:600;}
+  .trend.improving{background:#ECFDF5;color:var(--success);}
+  .trend.stable{background:var(--blue-50);color:var(--blue-700);}
+  .trend.worsening{background:#FEF2F4;color:var(--danger);}
+  .trend.insufficient{background:#F9FAFB;color:var(--ink-mute);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{font-size:11px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;
+    color:var(--ink-mute);padding:9px 12px;text-align:left;
+    border-bottom:1px solid var(--stroke);}
+  td{padding:11px 12px;border-bottom:1px solid var(--stroke);}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;}
+  .badge.pd{background:#FEF2F4;color:var(--danger);}
+  .badge.healthy{background:#ECFDF5;color:var(--success);}
+
+  .disclaimer{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;
+    padding:16px 18px;font-size:13px;color:#78350F;margin-top:24px;line-height:1.6;}
+
+  .loading{text-align:center;padding:80px;color:var(--ink-mute);}
+  .error{text-align:center;padding:80px;color:var(--danger);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="content">
+    <div class="loading">Loading report...</div>
+  </div>
+</div>
+
+<script>
+const token = "{{ token }}";
+
+function fmt(ts) {
+  const d = new Date(ts + (ts.endsWith("Z") ? "" : "Z"));
+  return d.toLocaleDateString("en-IN", {day:"numeric",month:"short",year:"numeric"});
+}
+function fmtFull(ts) {
+  const d = new Date(ts + (ts.endsWith("Z") ? "" : "Z"));
+  return d.toLocaleString("en-IN", {day:"numeric",month:"short",year:"numeric",
+    hour:"2-digit",minute:"2-digit"});
+}
+function trendBadge(t) {
+  const m = {improving:["improving","↓ Improving"],stable:["stable","→ Stable"],
+             worsening:["worsening","↑ Worsening"],insufficient_data:["insufficient","Insufficient data"]};
+  const [c, l] = m[t] || ["insufficient","Unknown"];
+  return `<span class="trend ${c}">${l}</span>`;
+}
+
+async function load() {
+  try {
+    const res = await fetch("/api/report/" + token);
+    if (!res.ok) {
+      const e = await res.json();
+      document.getElementById("content").innerHTML =
+        `<div class="error"><h2>Report unavailable</h2><p>${e.message}</p></div>`;
+      return;
+    }
+    const data = await res.json();
+    render(data);
+  } catch(e) {
+    document.getElementById("content").innerHTML =
+      `<div class="error">Failed to load report.</div>`;
+  }
+}
+
+function render(data) {
+  const {patient_name, readings, stats, generated_at} = data;
+  const total = stats.total;
+  const avg = stats.avg_probability !== null ? (stats.avg_probability*100).toFixed(1)+"%" : "—";
+  const roll = stats.rolling_avg_7 !== null ? (stats.rolling_avg_7*100).toFixed(1)+"%" : "—";
+
+  const rows = readings.slice(0,50).map(r => {
+    const pct = (r.probability_pd*100).toFixed(1);
+    const badge = r.prediction===1
+      ? '<span class="badge pd">PD indicators</span>'
+      : '<span class="badge healthy">Healthy</span>';
+    return `<tr>
+      <td>${fmtFull(r.timestamp)}</td>
+      <td><strong>${pct}%</strong></td>
+      <td>${badge}</td>
+      <td style="color:var(--ink-mute);font-style:italic">${r.notes || "—"}</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("content").innerHTML = `
+    <div class="report-header">
+      <div class="report-badge">🧠 Voice·PD · Read-only report</div>
+      <div class="report-title">Voice Analysis Report — ${patient_name}</div>
+      <div class="report-sub">Generated ${new Date(generated_at+"Z").toLocaleString("en-IN")} ·
+        This is a research prototype. Not a medical diagnosis.</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total readings</div>
+        <div class="stat-value">${total}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Overall avg</div>
+        <div class="stat-value">${avg}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Last 7 avg</div>
+        <div class="stat-value">${roll}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Trend</div>
+        <div style="margin-top:6px">${trendBadge(stats.trend)}</div>
+      </div>
+    </div>
+
+    ${total > 0 ? `
+    <div class="panel">
+      <div class="panel-title">Parkinson's Probability over time</div>
+      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    </div>` : ""}
+
+    <div class="panel">
+      <div class="panel-title">Reading history</div>
+      ${total > 0 ? `<table>
+        <thead><tr><th>Date & time</th><th>Probability</th><th>Result</th><th>Notes</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>` : "<p style='color:var(--ink-mute)'>No readings yet.</p>"}
+    </div>
+
+    <div class="disclaimer">
+      <strong>Clinical disclaimer:</strong> This report is generated by Voice·PD, a
+      research-grade voice screening prototype. Results are based on acoustic analysis
+      of sustained vowel phonation. This is NOT a diagnostic tool. All clinical
+      decisions must be made by a qualified neurologist or physician.
+    </div>
+  `;
+
+  if (total > 0) renderChart(readings);
+}
+
+function renderChart(readings) {
+  const chrono = [...readings].reverse();
+  const labels = chrono.map(r => fmt(r.timestamp));
+  const probs  = chrono.map(r => +(r.probability_pd*100).toFixed(1));
+  const rolling = probs.map((_,i) => {
+    const w = probs.slice(Math.max(0,i-6),i+1);
+    return +(w.reduce((a,b)=>a+b,0)/w.length).toFixed(1);
+  });
+  new Chart(document.getElementById("chart").getContext("2d"), {
+    type:"line",
+    data:{labels, datasets:[
+      {label:"Parkinson's Probability %",data:probs,borderColor:"#2563EB",
+       backgroundColor:"rgba(37,99,235,0.08)",borderWidth:2.5,fill:true,tension:0.3,
+       pointBackgroundColor:probs.map(p=>p>=38?"#DC2B4C":"#0EA371"),pointRadius:4},
+      {label:"7-reading avg",data:rolling,borderColor:"#8B5CF6",borderWidth:2,
+       borderDash:[5,4],pointRadius:0,fill:false,tension:0.3},
+      {label:"Threshold (38%)",data:new Array(probs.length).fill(38),
+       borderColor:"rgba(220,43,76,0.4)",borderWidth:1.5,borderDash:[4,4],pointRadius:0,fill:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{legend:{labels:{font:{family:"Inter",size:11},boxWidth:14,padding:14}}},
+      scales:{
+        x:{grid:{color:"rgba(13,37,88,0.05)"},
+           ticks:{font:{family:"Inter",size:10},color:"#6B7796",maxTicksLimit:8,maxRotation:30}},
+        y:{min:0,max:100,grid:{color:"rgba(13,37,88,0.05)"},
+           ticks:{font:{family:"Inter",size:11},color:"#6B7796",callback:v=>v+"%"}},
+      }},
+  });
+}
+
+load();
+</script>
+</body>
+</html>

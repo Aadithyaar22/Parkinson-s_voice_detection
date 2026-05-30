@@ -93,7 +93,9 @@ jobs:
 
           # ── All templates ─────────────────────────────────────────────────
           cp templates/index.html     space_build/templates/
-          cp templates/login.html     space_build/templates/
+          cp templates/login.html      space_build/templates/
+          cp templates/report.html    space_build/templates/
+          cp templates/export.html    space_build/templates/
           cp templates/dashboard.html space_build/templates/
           echo "  ✓ templates/"
 

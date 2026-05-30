@@ -1,4 +1,9 @@
-<!DOCTYPE html>
+"""
+Run from pva2/ folder:  python patch_dashboard.py
+Rewrites the dashboard with delete, edit notes, share panel, export PDF.
+"""
+
+NEW_DASHBOARD = '''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -221,7 +226,7 @@ async function loadDashboard() {
     render(_me,_readings,_stats,shareData);
   } catch(e) {
     document.getElementById("main-content").innerHTML=
-      '<div class="loading" style="color:#DC2B4C">Failed to load. Please refresh.</div>';
+      \'<div class="loading" style="color:#DC2B4C">Failed to load. Please refresh.</div>\';
   }
 }
 
@@ -301,7 +306,7 @@ function render(me,readings,stats,shareData) {
     </div>`:`
     <div class="panel">
       <div class="panel-header">
-        <div class="panel-title">Parkinson's Probability over time</div>
+        <div class="panel-title">Parkinson\'s Probability over time</div>
       </div>
       <div class="chart-wrap"><canvas id="chart"></canvas></div>
     </div>`}
@@ -319,12 +324,12 @@ function render(me,readings,stats,shareData) {
 }
 
 function buildTable(readings) {
-  if (!readings.length) return '<div class="empty"><p>No readings.</p></div>';
+  if (!readings.length) return \'<div class="empty"><p>No readings.</p></div>\';
   const rows=readings.slice(0,100).map(r=>{
     const pct=(r.probability_pd*100).toFixed(1);
     const badge=r.prediction===1
-      ?'<span class="badge pd">PD indicators</span>'
-      :'<span class="badge healthy">Healthy</span>';
+      ?\'<span class="badge pd">PD indicators</span>\'
+      :\'<span class="badge healthy">Healthy</span>\';
     const notes=r.notes||"";
     return `<tr id="row-${r._id}">
       <td style="color:var(--ink-mute);font-size:12px">${fmtFull(r.timestamp)}</td>
@@ -336,16 +341,16 @@ function buildTable(readings) {
       </td>
       <td>${badge}</td>
       <td class="notes-cell">
-        <span class="notes-text" onclick="editNotes('${r._id}')"
-          title="Click to edit">${notes||'<span style="color:#aaa">Add note…</span>'}</span>
+        <span class="notes-text" onclick="editNotes(\'${r._id}\')"
+          title="Click to edit">${notes||\'<span style="color:#aaa">Add note…</span>\'}</span>
         <div class="notes-edit" id="edit-${r._id}">
           <input class="notes-input" id="ni-${r._id}" value="${notes}" maxlength="500"/>
-          <button class="notes-save" onclick="saveNotes('${r._id}')">✓</button>
-          <button class="notes-cancel" onclick="cancelEdit('${r._id}')">✕</button>
+          <button class="notes-save" onclick="saveNotes(\'${r._id}\')">✓</button>
+          <button class="notes-cancel" onclick="cancelEdit(\'${r._id}\')">✕</button>
         </div>
       </td>
       <td>
-        <button class="del-btn" onclick="deleteReading('${r._id}')" title="Delete reading">
+        <button class="del-btn" onclick="deleteReading(\'${r._id}\')" title="Delete reading">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"/>
@@ -376,7 +381,7 @@ function renderChart(readings) {
   new Chart(document.getElementById("chart").getContext("2d"),{
     type:"line",
     data:{labels,datasets:[
-      {label:"Parkinson's Probability %",data:probs,borderColor:"#2563EB",
+      {label:"Parkinson\'s Probability %",data:probs,borderColor:"#2563EB",
        backgroundColor:"rgba(37,99,235,0.08)",borderWidth:2.5,fill:true,tension:0.3,
        pointBackgroundColor:probs.map(p=>p>=38?"#DC2B4C":"#0EA371"),pointRadius:5,pointHoverRadius:7},
       {label:"7-reading avg",data:rolling,borderColor:"#8B5CF6",borderWidth:2,
@@ -429,7 +434,7 @@ async function saveNotes(id) {
       body:JSON.stringify({notes:val})});
     if (!res.ok) throw new Error((await res.json()).message);
     const txt=document.querySelector(`#row-${id} .notes-text`);
-    if (txt) txt.innerHTML=val||'<span style="color:#aaa">Add note…</span>';
+    if (txt) txt.innerHTML=val||\'<span style="color:#aaa">Add note…</span>\';
     cancelEdit(id);
     showToast("Notes saved");
     const r=_readings.find(x=>x._id===id); if (r) r.notes=val;
@@ -468,4 +473,7 @@ function exportPDF() {
 loadDashboard();
 </script>
 </body>
-</html>
+</html>'''
+
+open("templates/dashboard.html", "w").write(NEW_DASHBOARD)
+print("✓ dashboard.html rewritten with delete, edit notes, share, export PDF")

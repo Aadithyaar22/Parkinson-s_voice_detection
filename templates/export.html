@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Voice·PD Export — {{ user.name }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Inter", sans-serif; color: #0B1533; background: white;
+         font-size: 13px; line-height: 1.5; padding: 40px; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start;
+            padding-bottom: 20px; border-bottom: 2px solid #1D4ED8; margin-bottom: 28px; }
+  .brand { font-family: "Space Grotesk", sans-serif; font-weight: 700;
+           font-size: 22px; color: #1D4ED8; }
+  .header-right { text-align: right; font-size: 12px; color: #6B7796; line-height: 1.8; }
+
+  h1 { font-family: "Space Grotesk", sans-serif; font-weight: 700;
+       font-size: 20px; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #6B7796; margin-bottom: 28px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr);
+           gap: 14px; margin-bottom: 28px; }
+  .stat { background: #F0F5FF; border-radius: 10px; padding: 14px 16px; }
+  .stat-label { font-size: 10px; font-weight: 500; letter-spacing: 0.07em;
+                text-transform: uppercase; color: #6B7796; margin-bottom: 5px; }
+  .stat-value { font-family: "Space Grotesk", sans-serif; font-weight: 700;
+                font-size: 20px; color: #1D4ED8; }
+
+  .section-title { font-family: "Space Grotesk", sans-serif; font-weight: 600;
+                   font-size: 14px; color: #0B1533; margin-bottom: 12px;
+                   padding-bottom: 6px; border-bottom: 1px solid #DBEAFE; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 12px; }
+  th { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+       color: #6B7796; padding: 7px 10px; text-align: left;
+       border-bottom: 1.5px solid #DBEAFE; }
+  td { padding: 8px 10px; border-bottom: 1px solid #EFF6FF; }
+  tr:nth-child(even) td { background: #FAFCFF; }
+  .pd-tag { color: #DC2B4C; font-weight: 600; }
+  .hc-tag { color: #0EA371; font-weight: 600; }
+
+  .trend-box { display: inline-block; padding: 4px 12px; border-radius: 999px;
+               font-size: 11px; font-weight: 600; }
+  .trend-improving { background: #ECFDF5; color: #0EA371; }
+  .trend-stable { background: #EFF6FF; color: #1D4ED8; }
+  .trend-worsening { background: #FEF2F4; color: #DC2B4C; }
+  .trend-insufficient { background: #F9FAFB; color: #6B7796; }
+
+  .disclaimer { margin-top: 20px; padding: 14px 16px; background: #FFFBEB;
+                border: 1px solid #FDE68A; border-radius: 8px;
+                font-size: 11px; color: #78350F; line-height: 1.6; }
+
+  .print-btn { position: fixed; bottom: 24px; right: 24px;
+               background: #1D4ED8; color: white; border: none; border-radius: 12px;
+               padding: 12px 24px; font-family: "Inter", sans-serif; font-weight: 600;
+               font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px rgba(29,78,216,0.4); }
+  .print-btn:hover { background: #1e40af; }
+
+  @media print {
+    .print-btn { display: none; }
+    body { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="brand">🧠 Voice·PD</div>
+    <div style="font-size:11px;color:#6B7796;margin-top:4px">Parkinson's Voice Screening</div>
+  </div>
+  <div class="header-right">
+    Generated: {{ generated_at }}<br/>
+    Patient: {{ user.name }}<br/>
+    Email: {{ user.email }}<br/>
+    <em>Research prototype — not a medical device</em>
+  </div>
+</div>
+
+<h1>Voice Analysis Report</h1>
+<div class="subtitle">{{ user.name }} · {{ stats.total }} reading{{ 's' if stats.total != 1 else '' }}</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-label">Total readings</div>
+    <div class="stat-value">{{ stats.total }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Overall avg</div>
+    <div class="stat-value">
+      {% if stats.avg_probability %}{{ "%.1f"|format(stats.avg_probability*100) }}%{% else %}—{% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Last 7 avg</div>
+    <div class="stat-value">
+      {% if stats.rolling_avg_7 %}{{ "%.1f"|format(stats.rolling_avg_7*100) }}%{% else %}—{% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Trend</div>
+    <div style="margin-top:4px">
+      {% if stats.trend == 'improving' %}<span class="trend-box trend-improving">↓ Improving</span>
+      {% elif stats.trend == 'stable' %}<span class="trend-box trend-stable">→ Stable</span>
+      {% elif stats.trend == 'worsening' %}<span class="trend-box trend-worsening">↑ Worsening</span>
+      {% else %}<span class="trend-box trend-insufficient">Insufficient data</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Reading History (most recent first)</div>
+{% if readings %}
+<table>
+  <thead>
+    <tr><th>Date & Time</th><th>Probability</th><th>Result</th><th>Duration</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    {% for r in readings[:100] %}
+    <tr>
+      <td>{{ r.timestamp[:16].replace('T', ' ') }} UTC</td>
+      <td><strong>{{ "%.1f"|format(r.probability_pd*100) }}%</strong></td>
+      <td>{% if r.prediction == 1 %}<span class="pd-tag">PD indicators</span>
+          {% else %}<span class="hc-tag">Healthy</span>{% endif %}</td>
+      <td>{{ r.audio_duration_s }}s</td>
+      <td>{{ r.notes or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:#6B7796;margin-bottom:24px">No readings recorded yet.</p>
+{% endif %}
+
+<div class="disclaimer">
+  <strong>Clinical Disclaimer:</strong> Voice·PD is a research-grade prototype built on
+  the Italian Parkinson's Voice and Speech dataset (Dimauro et al. 2019, n=61 subjects)
+  using wav2vec2-XLS-R embeddings. The 38% decision threshold is derived from
+  Youden's J on held-out data. This tool has NOT been clinically validated and does
+  NOT constitute a medical diagnosis. All clinical decisions must be made by a
+  qualified neurologist or physician. A single reading is not meaningful — longitudinal
+  trends across multiple sessions are required for any meaningful interpretation.
+</div>
+
+<button class="print-btn" onclick="window.print()">🖨️ Save as PDF</button>
+
+</body>
+</html>
