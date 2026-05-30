@@ -538,6 +538,65 @@ def export_pdf():
         return str(e), 500
 
 
+# ── Motor assessment ──────────────────────────────────────────────────────────
+@app.route("/motor")
+def motor_page():
+    return render_template("motor.html")
+
+
+@app.route("/api/motor/spiral", methods=["POST"])
+def api_motor_spiral():
+    body = request.get_json(silent=True) or {}
+    try:
+        from src.motor_analyzer import score_spiral
+        result = score_spiral({
+            "velocity_cv":   body.get("velocity_cv"),
+            "tremor_freq":   body.get("tremor_freq"),
+            "deviation_norm": body.get("deviation_norm"),
+        })
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/motor/typing", methods=["POST"])
+def api_motor_typing():
+    body = request.get_json(silent=True) or {}
+    try:
+        from src.motor_analyzer import score_typing
+        result = score_typing({
+            "iki_cv":     body.get("iki_cv"),
+            "wpm":        body.get("wpm"),
+            "hold_cv":    body.get("hold_cv"),
+            "error_rate": body.get("error_rate"),
+        })
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/motor/combined", methods=["POST"])
+def api_motor_combined():
+    body = request.get_json(silent=True) or {}
+    try:
+        from src.motor_analyzer import compute_combined_score
+        voice_prob   = body.get("voice_probability")
+        spiral_score = float(body.get("spiral_score", 50))
+        typing_score = float(body.get("typing_score", 50))
+        # If no voice reading, use neutral 0.5
+        if voice_prob is None or float(voice_prob) < 0:
+            voice_prob = 0.5
+        result = compute_combined_score(
+            float(voice_prob), spiral_score, typing_score
+        )
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
     host = os.environ.get("HOST", "0.0.0.0")

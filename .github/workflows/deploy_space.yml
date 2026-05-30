@@ -97,6 +97,7 @@ jobs:
           cp templates/report.html    space_build/templates/
           cp templates/export.html    space_build/templates/
           cp templates/dashboard.html space_build/templates/
+          cp templates/motor.html        space_build/templates/
           echo "  ✓ templates/"
 
           # ── Static assets ─────────────────────────────────────────────────
