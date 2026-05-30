@@ -527,8 +527,12 @@ def export_pdf():
         user = get_user_by_id(payload["user_id"])
         readings = get_readings(payload["user_id"])
         stats = get_stats(payload["user_id"])
+        # Generate spectrogram from a placeholder (no audio stored)
+        # In production this would come from a stored file
+        spectrogram_b64 = None
+
         return render_template("export.html", user=user, readings=readings,
-                               stats=stats,
+                               stats=stats, spectrogram_b64=spectrogram_b64,
                                generated_at=_dt.utcnow().strftime("%d %b %Y %H:%M UTC"))
     except Exception as e:
         return str(e), 500

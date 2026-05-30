@@ -538,6 +538,14 @@
     font-weight:700;font-size:16px;}
   .quality-tip{font-size:12px;opacity:0.85;margin-top:4px;line-height:1.5;}
 
+
+  .spectrogram-panel{margin-top:14px;border-radius:12px;overflow:hidden;
+    border:1px solid var(--blue-100);display:none;}
+  .spectrogram-header{padding:10px 14px;background:var(--blue-50);
+    font-family:var(--display);font-weight:600;font-size:13px;color:var(--blue-700);
+    border-bottom:1px solid var(--blue-100);}
+  .spectrogram-panel img{width:100%;display:block;}
+
 </style>
 </head>
 <body>
@@ -750,6 +758,10 @@
 
       <audio id="preview" controls style="display:none"></audio>
       <div id="status" class="status"></div>
+      <div class="spectrogram-panel" id="spectrogramPanel">
+        <div class="spectrogram-header">🔊 Voice Spectrogram</div>
+        <img id="spectrogramImg" src="" alt="Mel Spectrogram"/>
+      </div>
       <div class="quality-bar" id="qualityBar">
         <div class="quality-header">
           <span id="qualityMsg"></span>
@@ -970,6 +982,8 @@ analyzeBtn.addEventListener("click", async () => {
   if (sp) sp.style.display = "none";
   const qb = document.getElementById("qualityBar");
   if (qb) qb.style.display = "none";
+  const sp3 = document.getElementById("spectrogramPanel");
+  if (sp3) sp3.style.display = "none";
   const sb = document.getElementById("saveBtn");
   if (sb) { sb.disabled = false; sb.textContent = "💾 Save reading";
             sb.style.background = ""; }
