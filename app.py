@@ -333,6 +333,15 @@ def predict():
             wav_path = _transcode_to_wav(saved)
         result = _predict_wav2vec2(wav_path) if BACKEND == "wav2vec2" \
             else _predict_handcrafted(wav_path)
+
+        # Recording quality assessment
+        try:
+            from src.quality_scorer import assess_quality
+            quality = assess_quality(wav_path)
+        except Exception:
+            quality = {"overall_score": None, "overall_status": "warn",
+                       "overall_message": "Quality assessment unavailable",
+                       "metrics": {}, "recommendation": ""}
         proba = result["probability_pd"]
         pred  = int(proba >= TUNED_THRESHOLD)
         return jsonify({
@@ -347,6 +356,7 @@ def predict():
                       or training_report.get("best_classifier") or "unknown"),
             "groq_available": GROQ_AVAILABLE,
             "mongo_available": MONGO_AVAILABLE,
+            "quality": quality,
             "disclaimer": ("Research/educational prototype only. NOT a diagnostic device. "
                            "Voice screening has inherent limitations; any clinical decision "
                            "must be made by a qualified physician."),

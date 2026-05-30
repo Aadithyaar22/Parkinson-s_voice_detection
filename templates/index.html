@@ -525,6 +525,19 @@
     box-shadow:0 4px 14px rgba(37,99,235,0.3);}
   .ob-next:hover{transform:translateY(-1px);}
 
+
+  /* ── Quality badge ──────────────────────────────────────────────────────── */
+  .quality-bar{margin-top:14px;padding:12px 16px;border-radius:12px;
+    font-size:13px;display:none;border:1px solid;}
+  .quality-bar.good{background:#ECFDF5;border-color:#A7F3D0;color:#065F46;}
+  .quality-bar.warn{background:#FFFBEB;border-color:#FDE68A;color:#78350F;}
+  .quality-bar.poor{background:#FEF2F4;border-color:#FBCFE8;color:#9B1C2E;}
+  .quality-header{font-weight:600;margin-bottom:4px;display:flex;
+    align-items:center;justify-content:space-between;}
+  .quality-score{font-family:"Space Grotesk",system-ui,sans-serif;
+    font-weight:700;font-size:16px;}
+  .quality-tip{font-size:12px;opacity:0.85;margin-top:4px;line-height:1.5;}
+
 </style>
 </head>
 <body>
@@ -737,6 +750,13 @@
 
       <audio id="preview" controls style="display:none"></audio>
       <div id="status" class="status"></div>
+      <div class="quality-bar" id="qualityBar">
+        <div class="quality-header">
+          <span id="qualityMsg"></span>
+          <span class="quality-score" id="qualityScore"></span>
+        </div>
+        <div class="quality-tip" id="qualityTip"></div>
+      </div>
     </div>
 
     <!-- Result panel -->
@@ -948,6 +968,8 @@ analyzeBtn.addEventListener("click", async () => {
   // Reset save panel for new analysis
   const sp = document.getElementById("savePanel");
   if (sp) sp.style.display = "none";
+  const qb = document.getElementById("qualityBar");
+  if (qb) qb.style.display = "none";
   const sb = document.getElementById("saveBtn");
   if (sb) { sb.disabled = false; sb.textContent = "💾 Save reading";
             sb.style.background = ""; }
