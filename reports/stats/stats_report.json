@@ -1,0 +1,86 @@
+{
+  "bootstrap_ci": {
+    "hand_crafted": {
+      "auc": {
+        "mean": 0.982,
+        "ci95": [
+          0.9742,
+          0.9891
+        ]
+      },
+      "acc": {
+        "mean": 0.9471,
+        "ci95": [
+          0.9326,
+          0.9639
+        ]
+      },
+      "f1": {
+        "mean": 0.9496,
+        "ci95": [
+          0.9344,
+          0.9651
+        ]
+      },
+      "brier": {
+        "mean": 0.0484,
+        "ci95": [
+          0.0377,
+          0.0589
+        ]
+      }
+    },
+    "wav2vec2": {
+      "auc": {
+        "mean": 0.9695,
+        "ci95": [
+          0.9557,
+          0.9815
+        ]
+      },
+      "acc": {
+        "mean": 0.9461,
+        "ci95": [
+          0.929,
+          0.9603
+        ]
+      },
+      "f1": {
+        "mean": 0.9497,
+        "ci95": [
+          0.9338,
+          0.9632
+        ]
+      },
+      "brier": {
+        "mean": 0.0504,
+        "ci95": [
+          0.038,
+          0.0637
+        ]
+      }
+    }
+  },
+  "mcnemar_test": {
+    "b": 28,
+    "c": 23,
+    "chi2": 47.0411,
+    "p_value": 0.0,
+    "significant_p05": true,
+    "interpretation": "Statistically significant difference between models (p < 0.05)."
+  },
+  "thresholds": {
+    "hand_crafted": 0.6151,
+    "wav2vec2": 0.2562
+  },
+  "brier_scores": {
+    "hand_crafted": 0.0485,
+    "wav2vec2": 0.0506
+  },
+  "notes": [
+    "Bootstrap CI computed with 1000 iterations, stratified resampling.",
+    "McNemar's test with Yates correction compares per-sample correctness.",
+    "OOF predictions from 5-fold subject-grouped CV used throughout.",
+    "Thresholds tuned via Youden's J on OOF predictions."
+  ]
+}

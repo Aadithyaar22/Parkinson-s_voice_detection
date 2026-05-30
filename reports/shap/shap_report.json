@@ -1,0 +1,74 @@
+{
+  "top_10_features": [
+    {
+      "rank": 1,
+      "feature": "DFA",
+      "mean_abs_shap": 1.207622,
+      "clinical_significance": "High \u2014 long-range vocal correlations disrupted in PD"
+    },
+    {
+      "rank": 2,
+      "feature": "MFCC_1_std",
+      "mean_abs_shap": 0.747147,
+      "clinical_significance": "Not in clinical reference"
+    },
+    {
+      "rank": 3,
+      "feature": "MFCC_9_mean",
+      "mean_abs_shap": 0.715653,
+      "clinical_significance": "Not in clinical reference"
+    },
+    {
+      "rank": 4,
+      "feature": "MFCC_7_mean",
+      "mean_abs_shap": 0.515857,
+      "clinical_significance": "Not in clinical reference"
+    },
+    {
+      "rank": 5,
+      "feature": "MDVP:APQ",
+      "mean_abs_shap": 0.502845,
+      "clinical_significance": "Medium \u2014 amplitude perturbation quotient"
+    },
+    {
+      "rank": 6,
+      "feature": "MFCC_11_mean",
+      "mean_abs_shap": 0.464203,
+      "clinical_significance": "Not in clinical reference"
+    },
+    {
+      "rank": 7,
+      "feature": "HNR",
+      "mean_abs_shap": 0.399169,
+      "clinical_significance": "High \u2014 reduced harmonicity indicates vocal fold dysfunction"
+    },
+    {
+      "rank": 8,
+      "feature": "Shimmer:APQ5",
+      "mean_abs_shap": 0.387496,
+      "clinical_significance": "Not in clinical reference"
+    },
+    {
+      "rank": 9,
+      "feature": "Shimmer:APQ3",
+      "mean_abs_shap": 0.380234,
+      "clinical_significance": "Medium \u2014 short-term amplitude variation"
+    },
+    {
+      "rank": 10,
+      "feature": "MDVP:Fo(Hz)",
+      "mean_abs_shap": 0.29,
+      "clinical_significance": "Not in clinical reference"
+    }
+  ],
+  "n_recordings": 831,
+  "n_features_total": 54,
+  "model": "XGBoost (from tuned voting ensemble)",
+  "dataset": "Italian Parkinson's Voice and Speech (Dimauro et al. 2019)",
+  "notes": [
+    "SHAP values computed using TreeExplainer on XGBoost sub-model.",
+    "Positive SHAP = pushes prediction toward Parkinson's.",
+    "Negative SHAP = pushes prediction toward Healthy.",
+    "Features ordered by mean absolute SHAP across all 831 recordings."
+  ]
+}
