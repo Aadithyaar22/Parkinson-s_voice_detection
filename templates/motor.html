@@ -325,6 +325,10 @@
       For now, showing motor-only estimate.
     </div>
 
+
+  <!-- Save panel — shown after combined score -->
+  <div id="motorSavePanel" style="display:none;margin-top:16px"></div>
+
     <div class="disclaimer-sm">
       <strong>Research prototype only.</strong> Spiral and typing features are scored
       against published clinical reference ranges, not a trained classifier.
@@ -775,6 +779,7 @@ function renderCombined(data) {
   if (voiceProb < 0) {
     document.getElementById("voicePrompt").classList.remove("hidden");
   }
+  showSaveMotor(data);
 }
 
 function updateProgress() {

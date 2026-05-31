@@ -501,10 +501,15 @@ def api_shared_report(token):
         user = get_user_by_id(uid)
         readings = get_readings(uid)
         stats = get_stats(uid)
+        from src.database import get_motor_readings, get_motor_stats
+        motor_readings = get_motor_readings(uid)
+        motor_stats = get_motor_stats(uid)
         return jsonify({
             "patient_name": user["name"] if user else "Anonymous",
             "readings": readings,
             "stats": stats,
+            "motor_readings": motor_readings,
+            "motor_stats": motor_stats,
             "generated_at": _dt.utcnow().isoformat(),
         })
     except Exception as e:
@@ -536,6 +541,82 @@ def export_pdf():
                                generated_at=_dt.utcnow().strftime("%d %b %Y %H:%M UTC"))
     except Exception as e:
         return str(e), 500
+
+
+
+@app.route("/api/motor/readings/<reading_id>", methods=["DELETE"])
+def api_delete_motor(reading_id):
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    try:
+        from src.database import get_db
+        from bson import ObjectId
+        db = get_db()
+        result = db.motor_readings.delete_one({
+            "_id": ObjectId(reading_id),
+            "user_id": ObjectId(payload["user_id"]),
+        })
+        if result.deleted_count == 0:
+            return jsonify({"message": "Not found."}), 404
+        return jsonify({"deleted": True})
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+# ── Motor save / read ─────────────────────────────────────────────────────────
+@app.route("/api/motor/save", methods=["POST"])
+def api_motor_save():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    body = request.get_json(silent=True) or {}
+    try:
+        from src.database import save_motor_reading
+        doc = save_motor_reading(
+            user_id=payload["user_id"],
+            spiral_score=body.get("spiral_score", 50),
+            spiral_pd_risk=body.get("spiral_pd_risk", 0.5),
+            spiral_features=body.get("spiral_features", {}),
+            typing_score=body.get("typing_score", 50),
+            typing_pd_risk=body.get("typing_pd_risk", 0.5),
+            typing_features=body.get("typing_features", {}),
+            combined_probability=body.get("combined_probability", 0.5),
+            combined_prediction=body.get("combined_prediction", 0),
+            voice_probability=body.get("voice_probability"),
+            notes=body.get("notes", ""),
+        )
+        return jsonify(doc)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"message": str(e)}), 500
+
+
+@app.route("/api/motor/readings", methods=["GET"])
+def api_motor_readings():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    try:
+        from src.database import get_motor_readings
+        return jsonify(get_motor_readings(payload["user_id"]))
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@app.route("/api/motor/stats", methods=["GET"])
+def api_motor_stats():
+    from src.auth import require_auth
+    payload = require_auth(request)
+    if not payload:
+        return jsonify({"message": "Unauthorised."}), 401
+    try:
+        from src.database import get_motor_stats
+        return jsonify(get_motor_stats(payload["user_id"]))
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
 
 
 # ── Motor assessment ──────────────────────────────────────────────────────────

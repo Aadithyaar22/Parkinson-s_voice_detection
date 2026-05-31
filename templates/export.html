@@ -156,6 +156,51 @@
 <p style="color:#6B7796;margin-bottom:24px">No readings recorded yet.</p>
 {% endif %}
 
+
+{% if motor_readings and motor_readings|length > 0 %}
+<div class="section-title" style="margin-top:28px">Motor Assessment History</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+  <div class="stat">
+    <div class="stat-label">Assessments</div>
+    <div class="stat-value">{{ motor_readings|length }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Avg combined risk</div>
+    <div class="stat-value">
+      {% if motor_stats and motor_stats.avg_combined %}
+        {{ "%.1f"|format(motor_stats.avg_combined*100) }}%
+      {% else %}—{% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Avg spiral score</div>
+    <div class="stat-value">{{ "%.0f"|format(motor_stats.avg_spiral_score) if motor_stats and motor_stats.avg_spiral_score else "—" }}/100</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Avg typing score</div>
+    <div class="stat-value">{{ "%.0f"|format(motor_stats.avg_typing_score) if motor_stats and motor_stats.avg_typing_score else "—" }}/100</div>
+  </div>
+</div>
+<table>
+  <thead>
+    <tr><th>Date & Time</th><th>Spiral Score</th><th>Typing Score</th><th>Combined Risk</th><th>Result</th><th>Voice Used</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    {% for r in motor_readings[:50] %}
+    <tr>
+      <td>{{ r.timestamp[:16].replace('T',' ') }} UTC</td>
+      <td><strong>{{ "%.0f"|format(r.spiral_score) }}/100</strong></td>
+      <td><strong>{{ "%.0f"|format(r.typing_score) }}/100</strong></td>
+      <td><strong>{{ "%.1f"|format(r.combined_probability*100) }}%</strong></td>
+      <td>{% if r.combined_prediction == 1 %}<span class="pd-tag">PD indicators</span>{% else %}<span class="hc-tag">Healthy</span>{% endif %}</td>
+      <td>{{ "%.1f"|format(r.voice_probability*100) ~ "%" if r.voice_probability is not none else "—" }}</td>
+      <td>{{ r.notes or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
 <div class="disclaimer">
   <strong>Clinical Disclaimer:</strong> Voice·PD is a research-grade prototype built on
   the Italian Parkinson's Voice and Speech dataset (Dimauro et al. 2019, n=61 subjects)

@@ -261,3 +261,101 @@ def get_share_for_user(user_id: str) -> Optional[str]:
 def revoke_share(user_id: str):
     """Delete the user's share token."""
     get_db().shares.delete_one({"user_id": ObjectId(user_id)})
+
+
+# ---------------------------------------------------------------------------
+# Motor readings
+# ---------------------------------------------------------------------------
+
+def save_motor_reading(
+    user_id: str,
+    spiral_score: float,
+    spiral_pd_risk: float,
+    spiral_features: dict,
+    typing_score: float,
+    typing_pd_risk: float,
+    typing_features: dict,
+    combined_probability: float,
+    combined_prediction: int,
+    voice_probability,
+    notes: str = "",
+) -> Dict:
+    db = get_db()
+    try:
+        db.motor_readings.create_index("user_id")
+        db.motor_readings.create_index([("user_id", 1), ("timestamp", -1)])
+    except Exception:
+        pass
+    doc = {
+        "user_id":             ObjectId(user_id),
+        "timestamp":           datetime.utcnow(),
+        "spiral_score":        round(float(spiral_score), 2),
+        "spiral_pd_risk":      round(float(spiral_pd_risk), 4),
+        "spiral_features":     spiral_features,
+        "typing_score":        round(float(typing_score), 2),
+        "typing_pd_risk":      round(float(typing_pd_risk), 4),
+        "typing_features":     typing_features,
+        "combined_probability": round(float(combined_probability), 4),
+        "combined_prediction": int(combined_prediction),
+        "voice_probability":   round(float(voice_probability), 4) if voice_probability is not None else None,
+        "notes":               notes.strip()[:500],
+    }
+    result = db.motor_readings.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
+    doc["user_id"] = str(doc["user_id"])
+    doc["timestamp"] = doc["timestamp"].isoformat()
+    return doc
+
+
+def get_motor_readings(user_id: str, limit: int = 100) -> List[Dict]:
+    db = get_db()
+    cursor = db.motor_readings.find(
+        {"user_id": ObjectId(user_id)},
+        sort=[("timestamp", -1)],
+        limit=limit,
+    )
+    readings = []
+    for r in cursor:
+        r["_id"] = str(r["_id"])
+        r["user_id"] = str(r["user_id"])
+        r["timestamp"] = r["timestamp"].isoformat()
+        readings.append(r)
+    return readings
+
+
+def get_motor_stats(user_id: str) -> Dict:
+    readings = get_motor_readings(user_id)
+    if not readings:
+        return {
+            "total": 0,
+            "avg_combined": None,
+            "avg_spiral_score": None,
+            "avg_typing_score": None,
+            "trend": "insufficient_data",
+            "latest_combined": None,
+        }
+    combined = list(reversed([r["combined_probability"] for r in readings]))
+    total = len(combined)
+    avg_combined = round(float(sum(combined) / total), 4)
+    avg_spiral = round(float(sum(r["spiral_score"] for r in readings) / total), 2)
+    avg_typing = round(float(sum(r["typing_score"] for r in readings) / total), 2)
+
+    trend = "insufficient_data"
+    if total >= 4:
+        half = total // 2
+        first_avg = sum(combined[:half]) / half
+        last_avg  = sum(combined[half:]) / (total - half)
+        diff = last_avg - first_avg
+        trend = "worsening" if diff > 0.05 else "improving" if diff < -0.05 else "stable"
+    elif total >= 2:
+        diff = combined[-1] - combined[0]
+        trend = "worsening" if diff > 0.05 else "improving" if diff < -0.05 else "stable"
+
+    return {
+        "total":            total,
+        "avg_combined":     avg_combined,
+        "avg_spiral_score": avg_spiral,
+        "avg_typing_score": avg_typing,
+        "trend":            trend,
+        "latest_combined":  combined[-1] if combined else None,
+    }

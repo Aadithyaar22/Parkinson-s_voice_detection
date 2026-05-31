@@ -223,24 +223,28 @@ let _readings=[], _stats={}, _me={};
 
 async function loadDashboard() {
   try {
-    const [meR,readR,statR,shareR] = await Promise.all([
+    const [meR,readR,statR,shareR,motorR,motorStatR] = await Promise.all([
       fetch("/api/me",{headers:authH()}),
       fetch("/api/readings",{headers:authH()}),
       fetch("/api/stats",{headers:authH()}),
       fetch("/api/share",{headers:authH()}),
+      fetch("/api/motor/readings",{headers:authH()}),
+      fetch("/api/motor/stats",{headers:authH()}),
     ]);
     if (meR.status===401){logout();return;}
     _me=await meR.json(); _readings=await readR.json();
     _stats=await statR.json();
     const shareData=await shareR.json();
-    render(_me,_readings,_stats,shareData);
+    const motorReadings=await motorR.json();
+    const motorStats=await motorStatR.json();
+    render(_me,_readings,_stats,shareData,motorReadings,motorStats);
   } catch(e) {
     document.getElementById("main-content").innerHTML=
       '<div class="loading" style="color:#DC2B4C">Failed to load. Please refresh.</div>';
   }
 }
 
-function render(me,readings,stats,shareData) {
+function render(me,readings,stats,shareData,motorReadings,motorStats) {
   const total=stats.total;
   const avgP=stats.avg_probability!==null?(stats.avg_probability*100).toFixed(1)+"%":"—";
   const roll7=stats.rolling_avg_7!==null?(stats.rolling_avg_7*100).toFixed(1)+"%":"—";
@@ -331,10 +335,53 @@ function render(me,readings,stats,shareData) {
     ${total>0?`
     <div class="panel">
       <div class="panel-header">
-        <div class="panel-title">Reading history</div>
+        <div class="panel-title">Voice Reading History</div>
       </div>
       <div class="table-wrap">${buildTable(readings)}</div>
     </div>`:""}
+  
+    ${motorReadings && motorReadings.length > 0 ? `
+    <div class="panel" style="margin-top:0">
+      <div class="panel-header">
+        <div class="panel-title">✍️ Motor Assessment History</div>
+        <a href="/motor" class="btn-nav btn-primary-sm" style="font-size:12px;padding:7px 14px;text-decoration:none">+ New assessment</a>
+      </div>
+      <div class="stats" style="margin-bottom:16px">
+        <div class="stat-card">
+          <div class="stat-label">Motor assessments</div>
+          <div class="stat-value">${motorStats.total}</div>
+          <div class="stat-sub">completed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg combined risk</div>
+          <div class="stat-value">${motorStats.avg_combined !== null ? (motorStats.avg_combined*100).toFixed(1)+"%" : "—"}</div>
+          <div class="stat-sub">motor + voice</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg spiral score</div>
+          <div class="stat-value" style="color:var(--blue-700)">${motorStats.avg_spiral_score !== null ? motorStats.avg_spiral_score.toFixed(0)+"/100" : "—"}</div>
+          <div class="stat-sub">motor health</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg typing score</div>
+          <div class="stat-value" style="color:var(--blue-700)">${motorStats.avg_typing_score !== null ? motorStats.avg_typing_score.toFixed(0)+"/100" : "—"}</div>
+          <div class="stat-sub">motor health</div>
+        </div>
+      </div>
+      <div class="table-wrap">${buildMotorTable(motorReadings)}</div>
+    </div>` : `
+    <div class="panel" style="margin-top:0">
+      <div class="panel-header">
+        <div class="panel-title">✍️ Motor Assessment</div>
+        <a href="/motor" class="btn-nav btn-primary-sm" style="font-size:12px;padding:7px 14px;text-decoration:none">Take assessment</a>
+      </div>
+      <div class="empty" style="padding:32px">
+        <div class="empty-icon">✍️</div>
+        <h3>No motor assessments yet</h3>
+        <p>Complete the <a href="/motor">spiral drawing and typing test</a> to add motor biomarkers to your profile.</p>
+      </div>
+    </div>`}
+
   `;
 
   if (total>0) renderChart(readings);
@@ -417,6 +464,51 @@ function renderChart(readings) {
            ticks:{font:{family:"Inter",size:11},color:"#6B7796",callback:v=>v+"%"}},
       }},
   });
+}
+
+
+function buildMotorTable(readings) {
+  if (!readings || !readings.length) return '<div class="empty"><p>No motor readings.</p></div>';
+  const rows = readings.slice(0, 50).map(r => {
+    const spiralColor = r.spiral_score >= 70 ? "var(--success)" : r.spiral_score >= 40 ? "var(--warn)" : "var(--danger)";
+    const typingColor = r.typing_score >= 70 ? "var(--success)" : r.typing_score >= 40 ? "var(--warn)" : "var(--danger)";
+    const combPct = (r.combined_probability * 100).toFixed(1);
+    const badge = r.combined_prediction === 1
+      ? '<span class="badge pd">PD indicators</span>'
+      : '<span class="badge healthy">Healthy</span>';
+    return `<tr>
+      <td style="color:var(--ink-mute);font-size:12px">${fmtFull(r.timestamp)}</td>
+      <td><strong style="color:${spiralColor}">${r.spiral_score.toFixed(0)}/100</strong></td>
+      <td><strong style="color:${typingColor}">${r.typing_score.toFixed(0)}/100</strong></td>
+      <td><strong>${combPct}%</strong></td>
+      <td>${badge}</td>
+      <td style="color:var(--ink-mute);font-size:12px">${r.voice_probability !== null && r.voice_probability !== undefined ? (r.voice_probability*100).toFixed(1)+"%" : "—"}</td>
+      <td class="notes-cell"><span style="color:var(--ink-mute);font-style:italic;font-size:12px">${r.notes || "—"}</span></td>
+      <td>
+        <button class="del-btn" onclick="deleteMotorReading('${r._id}')" title="Delete">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join("");
+  return `<table>
+    <thead><tr>
+      <th>Date & time</th><th>Spiral score</th><th>Typing score</th>
+      <th>Combined risk</th><th>Result</th><th>Voice prob</th><th>Notes</th><th></th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+async function deleteMotorReading(id) {
+  if (!confirm("Delete this motor assessment?")) return;
+  try {
+    const res = await fetch(\`/api/motor/readings/\${id}\`, {method:"DELETE",headers:authH()});
+    if (!res.ok) throw new Error((await res.json()).message);
+    document.getElementById("row-m-"+id)?.remove();
+    showToast("Motor assessment deleted");
+    loadDashboard();
+  } catch(e) { showToast("Failed: "+e.message); }
 }
 
 // ── Delete reading ───────────────────────────────────────────────────────────
