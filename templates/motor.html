@@ -524,34 +524,10 @@ if (!voiceResult) {
 }
 
 if (!voiceResult) {
-  // Block the page
-  document.querySelector(".wrap").innerHTML = `
-    <nav>
-      <div class="brand">
-        <div class="brand-mark">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
-          </svg>
-        </div>
-        <span class="brand-name">Voice<span style="color:var(--blue-600)">·</span>PD</span>
-      </div>
-      <a href="/" class="btn-nav">← Voice Analysis</a>
-    </nav>
-    <div style="text-align:center;padding:80px 20px;max-width:500px;margin:0 auto">
-      <div style="font-size:48px;margin-bottom:20px">🎙️</div>
-      <h2 style="font-family:var(--display);font-weight:700;font-size:26px;
-        letter-spacing:-0.02em;margin-bottom:12px">Complete voice test first</h2>
-      <p style="font-size:15px;color:var(--ink-soft);line-height:1.6;margin-bottom:28px">
-        The motor spiral test is the secondary assessment — it works alongside
-        your voice result to give a combined multimodal Parkinson's probability.
-        Please complete the voice analysis first.
-      </p>
-      <a href="/" class="btn btn-primary" style="display:inline-flex;text-decoration:none">
-        Go to Voice Analysis →
-      </a>
-    </div>`;
-} else {
+  // Redirect to voice page with ?from=motor so it knows to redirect back
+  window.location.href = "/?from=motor";
+} else if (false) { // placeholder
+  void 0;} else {
   // Show voice context banner
   const voicePct = (voiceResult.probability_pd * 100).toFixed(1);
   const voiceColor = voiceResult.prediction === 1 ? "#DC2B4C" : "#0EA371";
