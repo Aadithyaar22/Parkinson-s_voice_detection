@@ -677,7 +677,8 @@
         <a href="/dashboard" id="pvd-dash-link" class="pill blue" style="display:none;text-decoration:none">📊 My readings</a>
         <a href="/login" id="pvd-login-btn" class="pill" style="text-decoration:none">Sign in</a>
       {% endif %}
-        <a href="/motor" class="pill" style="text-decoration:none;background:linear-gradient(135deg,#F5F3FF,#EFF6FF);border-color:#DDD6FE;color:#5B21B6">✍️ Motor test</a>
+        <a href="/motor" class="pill" style="text-decoration:none">✦ Motor test</a>
+        <span class="pill" id="motorAucPill" style="display:none">LOO-AUC 0.899</span>
     </div>
   </header>
 
@@ -1117,6 +1118,10 @@ if (explainBtn) {
 function getToken() { return localStorage.getItem("pvd_token"); }
 
 function updateAuthUI() {
+  // Show motor AUC pill if voice result exists
+  const voiceRes = localStorage.getItem("pvd_last_voice_result");
+  const mp = document.getElementById("motorAucPill");
+  if (mp && voiceRes) mp.style.display = "inline-flex";
   const token = getToken();
   const loginBtn = document.getElementById("pvd-login-btn");
   const dashLink = document.getElementById("pvd-dash-link");
