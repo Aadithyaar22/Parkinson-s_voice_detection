@@ -78,6 +78,7 @@ jobs:
             src/llm_explainer.py \
             src/database.py \
             src/auth.py \
+            src/spiral_inference.py \
             src/motor_analyzer.py; do
             [ -f "$f" ] && cp "$f" "space_build/$f" && echo "  ✓ $f" || echo "  WARN: $f not found"
           done
@@ -90,6 +91,11 @@ jobs:
           cp models/parkinsons_pipeline.joblib space_build/models/
           cp models/feature_names.pkl          space_build/models/
           cp models/training_report.json       space_build/models/
+          mkdir -p space_build/models_motor
+          [ -d models_motor ] && cp models_motor/*.joblib space_build/models_motor/ 2>/dev/null || true
+          [ -d models_motor ] && cp models_motor/*.pkl    space_build/models_motor/ 2>/dev/null || true
+          [ -d models_motor ] && cp models_motor/*.json   space_build/models_motor/ 2>/dev/null || true
+          echo '  ✓ models_motor/'
           echo "  ✓ models/"
 
           # ── All templates ─────────────────────────────────────────────────

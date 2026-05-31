@@ -627,14 +627,32 @@ def motor_page():
 
 @app.route("/api/motor/spiral", methods=["POST"])
 def api_motor_spiral():
+    """Classify spiral from canvas drawing (base64 PNG)."""
     body = request.get_json(silent=True) or {}
+    b64 = body.get("image_b64", "")
+    if not b64:
+        return jsonify({"error": "No image_b64 provided"}), 400
     try:
-        from src.motor_analyzer import score_spiral
-        result = score_spiral({
-            "velocity_cv":   body.get("velocity_cv"),
-            "tremor_freq":   body.get("tremor_freq"),
-            "deviation_norm": body.get("deviation_norm"),
-        })
+        from src.spiral_inference import predict_from_base64
+        result = predict_from_base64(b64)
+        return jsonify(result)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/motor/spiral-image", methods=["POST"])
+def api_motor_spiral_image():
+    """Classify spiral from uploaded photo (multipart form)."""
+    if "image" not in request.files:
+        return jsonify({"error": "No image file provided"}), 400
+    f = request.files["image"]
+    if not f.filename:
+        return jsonify({"error": "Empty filename"}), 400
+    try:
+        from src.spiral_inference import predict_from_bytes
+        img_bytes = f.read()
+        result = predict_from_bytes(img_bytes, filename=f.filename)
         return jsonify(result)
     except Exception as e:
         traceback.print_exc()

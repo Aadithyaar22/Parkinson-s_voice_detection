@@ -325,10 +325,6 @@
       For now, showing motor-only estimate.
     </div>
 
-
-  <!-- Save panel — shown after combined score -->
-  <div id="motorSavePanel" style="display:none;margin-top:16px"></div>
-
     <div class="disclaimer-sm">
       <strong>Research prototype only.</strong> Spiral and typing features are scored
       against published clinical reference ranges, not a trained classifier.
@@ -453,9 +449,7 @@ function extractSpiralFeatures(pts) {
   }
   if (vels.length < 5) return null;
 
-  const vel_cv_raw = cv(vels);
-  if (!isFinite(vel_cv_raw)) return null;
-  const vel_cv = parseFloat(vel_cv_raw.toFixed(4));
+  const vel_cv = parseFloat(cv(vels).toFixed(4));
   const vel_mean = parseFloat(mean(vels).toFixed(4));
 
   // Tremor frequency — count zero crossings of velocity deviation signal
@@ -505,7 +499,6 @@ async function analyseSpiral() {
       body: JSON.stringify(feats),
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
     spiralScore = data;
     renderSpiralResults(data);
     document.getElementById("ps1").classList.remove("active");
@@ -547,10 +540,6 @@ function renderScoreRing(wrapId, score, label) {
 
 function renderFeatureGrid(gridId, features) {
   const el = document.getElementById(gridId);
-  if (!features || Object.keys(features).length === 0) {
-    el.innerHTML = '<div style="color:var(--ink-mute);font-size:13px;padding:10px">Feature breakdown unavailable.</div>';
-    return;
-  }
   el.innerHTML = Object.entries(features).map(([k, f]) => {
     const cls = `status-${f.status}`;
     return `<div class="feature-card">
@@ -680,16 +669,14 @@ function extractTypingFeatures() {
   const duration_min = firstDown && lastDown ? (lastDown - firstDown) / 60000 : 0;
   const wpm = duration_min > 0 ? (TARGET.split(" ").length / duration_min) : 0;
 
-  const iki_cv_raw = ikis.length > 1 ? cv(ikis) : null;
-  const hold_cv_raw = holds.length > 1 ? cv(holds) : null;
   return {
-    iki_mean:   ikis.length > 0 ? parseFloat(mean(ikis).toFixed(1)) : 200,
-    iki_cv:     iki_cv_raw !== null && isFinite(iki_cv_raw) ? parseFloat(iki_cv_raw.toFixed(4)) : 0.3,
-    wpm:        isFinite(wpm) && wpm > 0 ? parseFloat(wpm.toFixed(1)) : 30,
-    hold_mean:  holds.length > 0 ? parseFloat(mean(holds).toFixed(1)) : 100,
-    hold_cv:    hold_cv_raw !== null && isFinite(hold_cv_raw) ? parseFloat(hold_cv_raw.toFixed(4)) : 0.3,
+    iki_mean: ikis.length > 0 ? parseFloat(mean(ikis).toFixed(1)) : null,
+    iki_cv:   ikis.length > 1 ? parseFloat(cv(ikis).toFixed(4)) : null,
+    wpm:      parseFloat(wpm.toFixed(1)),
+    hold_mean: holds.length > 0 ? parseFloat(mean(holds).toFixed(1)) : null,
+    hold_cv:   holds.length > 1 ? parseFloat(cv(holds).toFixed(4)) : null,
     error_rate: downs.length > 0 ? parseFloat((backspaces.length / downs.length).toFixed(4)) : 0,
-    n_keys:     downs.length,
+    n_keys: downs.length,
   };
 }
 
@@ -705,7 +692,6 @@ async function analyseTyping() {
       body: JSON.stringify(feats),
     });
     const data = await res.json();
-    if (data.error) throw new Error(data.error);
     typingScore = data;
     renderTypingResults(data);
     document.getElementById("ps2").classList.remove("active");
@@ -789,7 +775,6 @@ function renderCombined(data) {
   if (voiceProb < 0) {
     document.getElementById("voicePrompt").classList.remove("hidden");
   }
-  showSaveMotor(data);
 }
 
 function updateProgress() {
