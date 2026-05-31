@@ -825,6 +825,7 @@
 
 
         {% if mongo_available %}
+        <div id="motorPromptBox" style="display:none"></div>
         <div class="save-panel" id="savePanel" style="display:none">
           <div class="save-header">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -1183,13 +1184,38 @@ if (saveBtn) {
   });
 }
 
-// Hook into render to show save panel
+// Hook into render to show save panel + save voice result + motor prompts
 const _renderOrig = window.render;
 if (typeof _renderOrig === "function") {
   window.render = function(r) {
     _renderOrig(r);
     showSavePanel();
     updateAuthUI();
+
+    // Save full voice result for motor page
+    localStorage.setItem("pvd_last_voice_result", JSON.stringify({
+      probability_pd:  r.probability_pd,
+      prediction:      r.prediction,
+      confidence_pct:  r.confidence_pct,
+      backend:         r.backend,
+      model:           r.model,
+      threshold_used:  r.threshold_used,
+      timestamp:       new Date().toISOString(),
+    }));
+    localStorage.setItem("pvd_last_voice_prob", r.probability_pd.toString());
+
+    // Show motor AUC pill
+    const mp = document.getElementById("motorAucPill");
+    if (mp) mp.style.display = "inline-flex";
+
+    // Motor pending → strong redirect prompt
+    const motorPending = localStorage.getItem("pvd_motor_pending");
+    if (motorPending) {
+      localStorage.removeItem("pvd_motor_pending");
+      showMotorRedirectPrompt(r.probability_pd);
+    } else {
+      showMotorSuggestion(r.probability_pd);
+    }
   };
 }
 
@@ -1219,6 +1245,63 @@ function obNext() {
 // Show onboarding on first visit
 if (!localStorage.getItem("pvd_onboarded")) {
   setTimeout(showOnboarding, 600);
+}
+
+
+// ── Motor test prompts ────────────────────────────────────────────────────────
+function showMotorRedirectPrompt(voiceProb) {
+  // User visited motor first — strong redirect
+  const pct = (voiceProb * 100).toFixed(1);
+  const el = document.getElementById("motorPromptBox");
+  if (!el) return;
+  el.innerHTML = `
+    <div style="background:linear-gradient(135deg,#EFF6FF,#F5F3FF);
+      border:1px solid #BFDBFE;border-radius:16px;padding:20px 22px;
+      margin-top:20px;display:flex;align-items:center;gap:16px;">
+      <div style="font-size:32px">✍️</div>
+      <div style="flex:1">
+        <div style="font-family:var(--display);font-weight:700;font-size:16px;
+          color:var(--ink);margin-bottom:4px">
+          Complete the spiral drawing test
+        </div>
+        <div style="font-size:13px;color:var(--ink-soft);line-height:1.5">
+          You visited the motor test earlier. Your voice result
+          (<strong>${pct}% Parkinson's probability</strong>) is ready.
+          Complete the spiral test to get your combined multimodal score.
+        </div>
+      </div>
+      <a href="/motor" style="flex-shrink:0;display:inline-flex;align-items:center;
+        gap:6px;padding:11px 20px;background:linear-gradient(180deg,#3B82F6,#1D4ED8);
+        color:white;border-radius:12px;font-weight:600;font-size:14px;
+        text-decoration:none;box-shadow:0 4px 14px rgba(37,99,235,.3)">
+        Go to Motor Test →
+      </a>
+    </div>`;
+  el.style.display = "block";
+}
+
+function showMotorSuggestion(voiceProb) {
+  // First-time user — soft suggestion
+  const el = document.getElementById("motorPromptBox");
+  if (!el) return;
+  const seen = localStorage.getItem("pvd_motor_suggested");
+  if (seen) return; // Only show once per session
+  localStorage.setItem("pvd_motor_suggested", "1");
+  el.innerHTML = `
+    <div style="background:#F0FDF4;border:1px solid #A7F3D0;border-radius:14px;
+      padding:16px 18px;margin-top:16px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:24px">✦</div>
+      <div style="flex:1;font-size:13px;color:var(--ink-soft);line-height:1.5">
+        <strong style="color:var(--ink)">New here?</strong>
+        Also try the <a href="/motor" style="color:var(--blue-600);font-weight:500">
+        Motor Spiral Test</a> — a secondary assessment that combines with your
+        voice result for a stronger multimodal Parkinson's probability.
+      </div>
+      <button onclick="document.getElementById('motorPromptBox').style.display='none'"
+        style="background:none;border:none;cursor:pointer;color:var(--ink-mute);
+        font-size:18px;padding:4px">×</button>
+    </div>`;
+  el.style.display = "block";
 }
 
 </script>
