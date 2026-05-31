@@ -411,15 +411,117 @@ function renderResult(data){
     data.source==="upload"?"Photo":"Canvas";
   document.getElementById("resultPanel").style.display="block";
   document.getElementById("resultPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
-  // Auto-save combined reading if logged in
-  if (voiceResult) saveCombinedReading(data);
+  // Show manual save panel with notes
+  showMotorSavePanel(data);
+}
+
+function showMotorSavePanel(spiralData) {
+  const token = localStorage.getItem("pvd_token");
+  const el = document.getElementById("combinedSaveBanner");
+  if (!el) return;
+
+  const voiceRisk   = voiceResult ? voiceResult.probability_pd : 0.5;
+  const spiralRisk  = spiralData.probability_pd;
+  const combined    = voiceRisk * 0.55 + spiralRisk * 0.45;
+  const combinedPct = (combined * 100).toFixed(1);
+  const voicePct    = (voiceRisk * 100).toFixed(1);
+  const spiralPct   = (spiralRisk * 100).toFixed(1);
+  const color       = combined >= 0.38 ? "#DC2B4C" : "#0EA371";
+
+  if (!token) {
+    el.innerHTML = `
+      <div style="padding:16px 18px;background:var(--blue-50);border:1px solid var(--blue-100);
+        border-radius:14px;font-size:13px;color:var(--ink-soft);margin-top:16px">
+        <a href="/login" style="color:var(--blue-600);font-weight:500">Sign in</a>
+        to save this combined assessment to your history.
+      </div>`;
+    el.style.display = "block";
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="background:var(--blue-50);border:1px solid var(--blue-200);border-radius:14px;
+      padding:20px;margin-top:16px;">
+      <div style="font-family:var(--display);font-weight:600;font-size:15px;
+        color:var(--ink);margin-bottom:6px">
+        💾 Save combined assessment
+      </div>
+      <div style="font-size:13px;color:var(--ink-soft);margin-bottom:12px">
+        Voice: <strong>${voicePct}%</strong> ·
+        Spiral: <strong>${spiralPct}%</strong> ·
+        Combined (55/45): <strong style="color:${color}">${combinedPct}%</strong>
+      </div>
+      <textarea id="motorNotesField"
+        placeholder="Optional notes — e.g. 'dominant hand used', 'drew slowly', 'felt shaky today'"
+        rows="2"
+        style="width:100%;padding:10px 12px;border:1.5px solid var(--blue-200);border-radius:10px;
+          font-family:var(--sans);font-size:13px;resize:vertical;margin-bottom:10px;
+          color:var(--ink);background:white;outline:none;"></textarea>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-primary" id="motorSaveBtn"
+          style="padding:10px 20px;font-size:13px"
+          onclick="saveMotorCombined(${voiceRisk}, ${spiralRisk}, ${combined}, ${spiralData.prediction})">
+          💾 Save assessment
+        </button>
+        <span id="motorSaveMsg" style="font-size:13px;color:var(--ink-mute)"></span>
+      </div>
+    </div>`;
+  el.style.display = "block";
+}
+
+async function saveMotorCombined(voiceRisk, spiralRisk, combined, spiralPred) {
+  const token = localStorage.getItem("pvd_token");
+  if (!token) { window.location.href = "/login"; return; }
+  const notes = document.getElementById("motorNotesField")?.value || "";
+  const btn   = document.getElementById("motorSaveBtn");
+  const msg   = document.getElementById("motorSaveMsg");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Saving…';
+  try {
+    const res = await fetch("/api/readings", {
+      method: "POST",
+      headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body: JSON.stringify({
+        probability_pd:  combined,
+        prediction:      combined >= 0.38 ? 1 : 0,
+        confidence_pct:  parseFloat((100*Math.max(combined,1-combined)).toFixed(1)),
+        audio_duration_s: 0,
+        backend:         "multimodal",
+        model:           "voice+spiral",
+        notes:           notes || \`Voice \${(voiceRisk*100).toFixed(1)}% · Spiral \${(spiralRisk*100).toFixed(1)}%\`,
+      }),
+    });
+    if (res.status === 401) { localStorage.removeItem("pvd_token"); window.location.href="/login"; return; }
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    msg.textContent = "✓ Saved to your history";
+    btn.textContent = "✓ Saved";
+    btn.style.background = "linear-gradient(180deg,#0EA371,#059669)";
+    // Link to dashboard
+    msg.innerHTML = '✓ Saved · <a href="/dashboard" style="color:var(--blue-600);font-weight:500">View dashboard →</a>';
+  } catch(e) {
+    msg.textContent = "Failed: " + e.message;
+    btn.disabled = false;
+    btn.innerHTML = "💾 Save assessment";
+  }
 }
 
 
 // ── Gate: require voice test first ────────────────────────────────────────────
 const voiceResultRaw = localStorage.getItem("pvd_last_voice_result");
+const voiceProbFallback = localStorage.getItem("pvd_last_voice_prob");
 let voiceResult = null;
 try { voiceResult = voiceResultRaw ? JSON.parse(voiceResultRaw) : null; } catch(e) {}
+// Fallback: old key format
+if (!voiceResult && voiceProbFallback) {
+  const p = parseFloat(voiceProbFallback);
+  voiceResult = {probability_pd: p, prediction: p >= 0.38 ? 1 : 0,
+    confidence_pct: (100*Math.max(p,1-p)).toFixed(1), backend:"wav2vec2", model:"logreg"};
+}
+// If still no voice result, set pending flag so voice page knows to redirect back
+if (!voiceResult) {
+  localStorage.setItem("pvd_motor_pending", "1");
+}
 
 if (!voiceResult) {
   // Block the page

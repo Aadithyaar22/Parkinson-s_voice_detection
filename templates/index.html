@@ -678,7 +678,6 @@
         <a href="/login" id="pvd-login-btn" class="pill" style="text-decoration:none">Sign in</a>
       {% endif %}
         <a href="/motor" class="pill" style="text-decoration:none">✦ Motor test</a>
-        <span class="pill" id="motorAucPill" style="display:none">LOO-AUC 0.899</span>
     </div>
   </header>
 
@@ -1135,6 +1134,32 @@ function updateAuthUI() {
 }
 updateAuthUI();
 
+// ── Restore last voice result on page load ───────────────────────────────────
+(function() {
+  const raw = localStorage.getItem("pvd_last_voice_result");
+  if (!raw) return;
+  try {
+    const r = JSON.parse(raw);
+    // Restore lastResult so save button works
+    lastResult = r;
+    // Show save panel immediately
+    const sp = document.getElementById("savePanel");
+    if (sp) {
+      sp.style.display = "block";
+      const sm = document.getElementById("saveMsg");
+      if (sm) sm.textContent = "";
+      const nb = document.getElementById("notesField");
+      if (nb) nb.value = "";
+      // Show a subtle "previous result" badge
+      const badge = document.createElement("div");
+      badge.style.cssText = "font-size:11px;color:var(--ink-mute);margin-bottom:8px;";
+      badge.textContent = "↩ Previous result — record again or save this one";
+      sp.insertBefore(badge, sp.firstChild);
+    }
+    updateAuthUI();
+  } catch(e) {}
+})();
+
 // Show save panel after analysis
 const _origRender = typeof render === "function" ? render : null;
 function showSavePanel() {
@@ -1206,7 +1231,7 @@ if (typeof _renderOrig === "function") {
 
     // Show motor AUC pill
     const mp = document.getElementById("motorAucPill");
-    if (mp) mp.style.display = "inline-flex";
+    // motor pill removed
 
     // Motor pending → strong redirect prompt
     const motorPending = localStorage.getItem("pvd_motor_pending");
