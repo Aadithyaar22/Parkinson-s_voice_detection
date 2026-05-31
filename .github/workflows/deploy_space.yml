@@ -77,7 +77,8 @@ jobs:
             src/wav2vec2_inference.py \
             src/llm_explainer.py \
             src/database.py \
-            src/auth.py; do
+            src/auth.py \
+            src/motor_analyzer.py; do
             [ -f "$f" ] && cp "$f" "space_build/$f" && echo "  ✓ $f" || echo "  WARN: $f not found"
           done
 
