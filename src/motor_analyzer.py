@@ -146,7 +146,7 @@ def score_spiral(features: Dict[str, float]) -> Dict[str, Any]:
 
     for feat, norm in SPIRAL_NORMS.items():
         val = features.get(feat)
-        if val is None:
+        if val is None or not isinstance(val, (int, float)) or not __import__('math').isfinite(float(val)):
             continue
         if norm["direction"] == "lower_better":
             score = _score_lower_better(val, norm["healthy_max"], norm["pd_min"])
@@ -200,7 +200,7 @@ def score_typing(features: Dict[str, float]) -> Dict[str, Any]:
 
     for feat, norm in TYPING_NORMS.items():
         val = features.get(feat)
-        if val is None:
+        if val is None or not isinstance(val, (int, float)) or not __import__('math').isfinite(float(val)):
             continue
         if norm["direction"] == "lower_better":
             score = _score_lower_better(val, norm["healthy_max"], norm["pd_min"])
