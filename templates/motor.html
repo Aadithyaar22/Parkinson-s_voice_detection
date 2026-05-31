@@ -12,9 +12,9 @@
     --blue-50:#EFF6FF;--blue-100:#DBEAFE;--blue-200:#BFDBFE;--blue-300:#93C5FD;
     --blue-500:#3B82F6;--blue-600:#2563EB;--blue-700:#1D4ED8;
     --ink:#0B1533;--ink-soft:#3E4A6F;--ink-mute:#6B7796;
-    --panel:rgba(255,255,255,0.80);--panel-solid:#FFFFFF;
-    --stroke:rgba(13,37,88,0.10);--stroke-strong:rgba(13,37,88,0.18);
-    --success:#0EA371;--danger:#DC2B4C;--warn:#D97706;
+    --panel:rgba(255,255,255,0.80);--stroke:rgba(13,37,88,0.10);
+    --stroke-strong:rgba(13,37,88,0.18);
+    --success:#0EA371;--danger:#DC2B4C;
     --shadow-md:0 6px 16px rgba(16,38,90,0.08),0 2px 4px rgba(16,38,90,0.04);
     --display:"Space Grotesk",system-ui,sans-serif;
     --sans:"Inter",system-ui,sans-serif;
@@ -22,7 +22,6 @@
   *{box-sizing:border-box;margin:0;padding:0;}
   body{font-family:var(--sans);color:var(--ink);background:#F6F9FF;
        -webkit-font-smoothing:antialiased;min-height:100vh;}
-
   .bg{position:fixed;inset:0;z-index:-2;
     background:radial-gradient(ellipse 80% 55% at 20% 0%,#E0ECFF 0%,transparent 55%),
                radial-gradient(ellipse 60% 45% at 100% 30%,#DEEBFF 0%,transparent 50%),
@@ -30,766 +29,391 @@
   .blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:0.45;mix-blend-mode:multiply;}
   .blob.b1{width:500px;height:500px;top:-180px;left:-120px;background:radial-gradient(circle,#BFDBFE 0%,transparent 70%);}
   .blob.b2{width:400px;height:400px;bottom:-100px;right:-100px;background:radial-gradient(circle,#93C5FD 0%,transparent 70%);}
-
-  .wrap{max-width:1100px;margin:0 auto;padding:28px 28px 80px;}
-
-  nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:48px;}
+  .wrap{max-width:900px;margin:0 auto;padding:28px 28px 80px;}
+  nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:40px;}
   .brand{display:flex;align-items:center;gap:10px;}
   .brand-mark{width:36px;height:36px;border-radius:10px;
     background:linear-gradient(135deg,var(--blue-500),var(--blue-700));
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 4px 12px rgba(59,130,246,0.35);}
   .brand-name{font-family:var(--display);font-weight:700;font-size:17px;}
-  .nav-links{display:flex;gap:8px;}
   .btn-nav{font-family:var(--sans);font-weight:500;font-size:13px;padding:8px 16px;
     border-radius:10px;border:1px solid var(--stroke-strong);background:white;
     color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block;}
-  .btn-nav:hover{background:var(--blue-50);border-color:var(--blue-300);color:var(--blue-700);}
-
-  .hero{margin-bottom:40px;}
+  .btn-nav:hover{background:var(--blue-50);color:var(--blue-700);}
+  .hero{margin-bottom:36px;}
   .hero-eyebrow{font-size:12px;font-weight:500;letter-spacing:0.06em;
     text-transform:uppercase;color:var(--blue-600);margin-bottom:8px;}
-  .hero h1{font-family:var(--display);font-weight:700;
-    font-size:clamp(28px,4vw,42px);letter-spacing:-0.03em;margin-bottom:8px;}
-  .hero-sub{font-size:15px;color:var(--ink-soft);max-width:640px;line-height:1.6;}
-
-  .steps{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
-  @media(max-width:800px){.steps{grid-template-columns:1fr;}}
-
-  .panel{background:var(--panel);backdrop-filter:blur(18px);border:1px solid var(--stroke);
-    border-radius:22px;padding:28px;box-shadow:var(--shadow-md);}
-  .panel-num{width:28px;height:28px;border-radius:8px;background:var(--blue-600);
-    color:white;display:inline-flex;align-items:center;justify-content:center;
-    font-family:var(--display);font-weight:700;font-size:13px;margin-right:10px;vertical-align:middle;}
+  .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,38px);
+    letter-spacing:-0.03em;margin-bottom:8px;}
+  .hero-sub{font-size:14px;color:var(--ink-soft);max-width:600px;line-height:1.6;}
+  .panel{background:var(--panel);backdrop-filter:blur(18px);
+    border:1px solid var(--stroke);border-radius:22px;padding:28px;
+    box-shadow:var(--shadow-md);margin-bottom:24px;}
   .panel h2{font-family:var(--display);font-weight:600;font-size:18px;
-    letter-spacing:-0.015em;display:inline;vertical-align:middle;}
-  .panel-sub{font-size:13px;color:var(--ink-mute);margin:10px 0 18px;}
-
-  /* ── Spiral canvas ── */
+    letter-spacing:-0.015em;margin-bottom:8px;}
+  .panel-sub{font-size:13px;color:var(--ink-mute);margin-bottom:20px;line-height:1.6;}
+  .mode-tabs{display:flex;gap:2px;background:#F1F5FF;border-radius:12px;
+    padding:3px;margin-bottom:20px;}
+  .mode-tab{flex:1;padding:9px;border:0;border-radius:10px;cursor:pointer;
+    font-family:var(--sans);font-size:13px;font-weight:500;
+    background:transparent;color:var(--ink-mute);transition:all .18s;}
+  .mode-tab.active{background:white;color:var(--ink);
+    box-shadow:0 1px 4px rgba(16,38,90,0.10);}
+  .mode-panel{display:none;}
+  .mode-panel.active{display:block;}
   .canvas-wrap{position:relative;border-radius:14px;overflow:hidden;
-    border:2px solid var(--blue-200);background:#FAFCFF;touch-action:none;}
-  #spiralCanvas{display:block;cursor:crosshair;width:100%;height:100%;}
-  .canvas-overlay{position:absolute;inset:0;display:flex;align-items:center;
+    border:2px solid var(--blue-200);background:#FAFCFF;touch-action:none;height:300px;}
+  #spiralCanvas{display:block;width:100%;height:100%;cursor:crosshair;}
+  .canvas-hint{position:absolute;inset:0;display:flex;align-items:center;
     justify-content:center;pointer-events:none;transition:opacity .3s;}
-  .canvas-overlay-text{font-family:var(--display);font-weight:600;font-size:14px;
+  .canvas-hint-text{font-family:var(--display);font-weight:600;font-size:14px;
     color:var(--blue-400);text-align:center;line-height:1.5;}
-
-  /* ── Typing test ── */
-  .target-sentence{background:var(--blue-50);border:1px solid var(--blue-200);
-    border-radius:12px;padding:16px 18px;font-size:15px;color:var(--ink);
-    font-family:var(--sans);line-height:1.6;margin-bottom:14px;
-    letter-spacing:0.01em;}
-  .target-sentence span{border-radius:3px;transition:background .1s;}
-  .char-correct{background:#D1FAE5;color:#065F46;}
-  .char-wrong{background:#FECACA;color:#991B1B;}
-  .char-current{background:var(--blue-200);animation:blink-cur .8s infinite;}
-  @keyframes blink-cur{50%{background:var(--blue-300);}}
-
-  .typing-input{width:100%;padding:12px 14px;border:2px solid var(--blue-200);
-    border-radius:12px;font-size:15px;font-family:var(--sans);color:var(--ink);
-    outline:none;transition:border-color .18s;background:white;}
-  .typing-input:focus{border-color:var(--blue-500);
-    box-shadow:0 0 0 3px rgba(59,130,246,0.12);}
-  .typing-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;}
-  .typing-stat{background:var(--blue-50);padding:8px 14px;border-radius:10px;
-    border:1px solid var(--blue-100);font-size:12px;color:var(--blue-700);}
-  .typing-stat strong{font-family:var(--display);font-weight:700;font-size:16px;
-    display:block;margin-bottom:1px;}
-
-  /* ── Buttons ── */
+  .upload-zone{border:2px dashed var(--blue-200);border-radius:14px;
+    padding:40px 20px;text-align:center;cursor:pointer;background:#FAFCFF;
+    transition:all .2s;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--blue-500);background:var(--blue-50);}
+  .upload-zone-icon{font-size:36px;margin-bottom:12px;}
+  .upload-zone-title{font-family:var(--display);font-weight:600;font-size:16px;
+    color:var(--ink);margin-bottom:6px;}
+  .upload-zone-sub{font-size:13px;color:var(--ink-mute);}
+  .upload-preview{width:100%;max-height:280px;object-fit:contain;border-radius:10px;
+    border:1px solid var(--stroke);display:none;margin-top:14px;}
+  .upload-instructions{background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;
+    padding:14px 16px;font-size:13px;color:#78350F;margin-bottom:16px;line-height:1.6;}
   .btn{font-family:var(--sans);font-weight:600;font-size:14px;padding:11px 22px;
     border-radius:12px;border:0;cursor:pointer;display:inline-flex;
-    align-items:center;gap:8px;transition:all .18s;}
+    align-items:center;gap:8px;transition:all .18s;margin-top:12px;}
   .btn:disabled{opacity:.45;cursor:not-allowed;}
   .btn-primary{background:linear-gradient(180deg,var(--blue-500),var(--blue-700));
     color:white;box-shadow:0 4px 14px rgba(37,99,235,.3);}
-  .btn-primary:hover:not(:disabled){transform:translateY(-1px);
-    box-shadow:0 6px 20px rgba(37,99,235,.45);}
-  .btn-ghost{background:var(--panel-solid);color:var(--ink);
-    border:1px solid var(--stroke-strong);}
-  .btn-ghost:hover:not(:disabled){background:var(--blue-50);
-    border-color:var(--blue-300);color:var(--blue-700);}
-
-  /* ── Feature results ── */
-  .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
-  .feature-card{background:var(--panel-solid);border:1px solid var(--stroke);
-    border-radius:12px;padding:12px 14px;}
-  .feature-label{font-size:11px;font-weight:500;letter-spacing:0.05em;
-    text-transform:uppercase;color:var(--ink-mute);margin-bottom:4px;}
-  .feature-value{font-family:var(--display);font-weight:700;font-size:18px;margin-bottom:3px;}
-  .feature-ref{font-size:11px;color:var(--ink-mute);}
-  .status-normal{color:var(--success);}
-  .status-borderline{color:var(--warn);}
-  .status-abnormal{color:var(--danger);}
-
-  /* ── Score ring ── */
-  .score-ring-wrap{display:flex;align-items:center;gap:20px;
-    margin-top:16px;padding:18px;background:var(--blue-50);
-    border-radius:14px;border:1px solid var(--blue-100);}
-  .score-ring{position:relative;width:72px;height:72px;flex-shrink:0;}
-  .score-ring svg{transform:rotate(-90deg);}
-  .score-ring-val{position:absolute;inset:0;display:flex;align-items:center;
-    justify-content:center;font-family:var(--display);font-weight:700;font-size:15px;}
-  .score-desc h4{font-family:var(--display);font-weight:600;font-size:15px;margin-bottom:4px;}
-  .score-desc p{font-size:13px;color:var(--ink-soft);line-height:1.5;}
-
-  /* ── Combined panel ── */
-  .combined-panel{background:var(--panel);backdrop-filter:blur(18px);
-    border:1px solid var(--stroke);border-radius:22px;padding:32px;
-    box-shadow:var(--shadow-md);margin-top:24px;}
-  .combined-title{font-family:var(--display);font-weight:700;font-size:22px;
-    letter-spacing:-0.02em;margin-bottom:6px;}
-  .combined-sub{font-size:14px;color:var(--ink-mute);margin-bottom:24px;}
-  .combined-gauge{height:12px;border-radius:999px;
-    background:linear-gradient(90deg,#D1FAE5 0%,#FEF3C7 50%,#FECACA 100%);
-    position:relative;margin:10px 0;}
-  .combined-needle{position:absolute;top:-4px;bottom:-4px;width:5px;
-    background:white;border:2.5px solid var(--ink);border-radius:4px;
-    transform:translateX(-50%);transition:left 1.2s cubic-bezier(.2,.8,.2,1);
-    box-shadow:0 2px 6px rgba(0,0,0,.18);}
-  .gauge-labels{display:flex;justify-content:space-between;
-    font-size:11px;color:var(--ink-mute);margin-top:6px;}
-  .modality-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:20px;}
-  @media(max-width:600px){.modality-bars{grid-template-columns:1fr;}}
-  .mod-bar{background:var(--panel-solid);border:1px solid var(--stroke);
-    border-radius:14px;padding:16px;}
-  .mod-label{font-size:11px;font-weight:500;letter-spacing:0.06em;
-    text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px;}
-  .mod-value{font-family:var(--display);font-weight:700;font-size:22px;color:var(--blue-700);}
-  .mod-contrib{font-size:11px;color:var(--ink-mute);margin-top:2px;}
-  .mod-bar-fill{height:4px;border-radius:999px;background:var(--blue-200);margin-top:8px;}
-  .mod-bar-fill-inner{height:100%;border-radius:999px;
-    background:linear-gradient(90deg,var(--blue-400),var(--blue-600));
-    transition:width 1s cubic-bezier(.2,.8,.2,1);}
-
-  .verdict-box{padding:20px;border-radius:14px;display:flex;
-    align-items:center;gap:16px;margin-top:20px;}
-  .verdict-box.healthy{background:#ECFDF5;border:1px solid #A7F3D0;}
-  .verdict-box.pd{background:#FEF2F4;border:1px solid #FBCFE8;}
-  .verdict-icon2{width:44px;height:44px;border-radius:12px;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-  .healthy .verdict-icon2{background:rgba(14,163,113,.15);color:var(--success);}
-  .pd .verdict-icon2{background:rgba(220,43,76,.13);color:var(--danger);}
-  .verdict-label{font-family:var(--display);font-weight:600;font-size:17px;margin-bottom:3px;}
+  .btn-primary:hover:not(:disabled){transform:translateY(-1px);}
+  .btn-ghost{background:white;color:var(--ink);border:1px solid var(--stroke-strong);}
+  .btn-ghost:hover:not(:disabled){background:var(--blue-50);color:var(--blue-700);}
+  .result-panel{margin-top:20px;display:none;}
+  .result-verdict{display:flex;align-items:center;gap:14px;padding:18px;
+    border-radius:14px;margin-bottom:16px;}
+  .result-verdict.healthy{background:#ECFDF5;border:1px solid #A7F3D0;}
+  .result-verdict.pd{background:#FEF2F4;border:1px solid #FBCFE8;}
+  .verdict-icon{width:44px;height:44px;border-radius:12px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .healthy .verdict-icon{background:rgba(14,163,113,.15);}
+  .pd .verdict-icon{background:rgba(220,43,76,.13);}
+  .verdict-title{font-family:var(--display);font-weight:700;font-size:17px;margin-bottom:3px;}
   .verdict-meta{font-size:13px;color:var(--ink-soft);}
-
-  .disclaimer-sm{margin-top:18px;padding:12px 14px;background:#FFFBEB;
-    border:1px solid #FDE68A;border-radius:10px;font-size:12px;
-    color:#78350F;line-height:1.55;}
-
-  .progress-steps{display:flex;gap:8px;margin-bottom:28px;}
-  .ps{flex:1;height:4px;border-radius:999px;background:var(--blue-100);}
-  .ps.done{background:var(--blue-600);}
-  .ps.active{background:linear-gradient(90deg,var(--blue-600),var(--blue-300));}
-
-  .hidden{display:none;}
+  .gauge-wrap{margin-bottom:16px;}
+  .gauge-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .gauge-title{font-size:11px;font-weight:500;letter-spacing:0.06em;
+    text-transform:uppercase;color:var(--ink-mute);}
+  .gauge-value{font-family:var(--display);font-weight:700;font-size:24px;color:var(--blue-700);}
+  .gauge-bar{height:10px;border-radius:999px;
+    background:linear-gradient(90deg,#D1FAE5 0%,#FEF3C7 50%,#FECACA 100%);position:relative;}
+  .gauge-needle{position:absolute;top:-3px;bottom:-3px;width:4px;
+    background:white;border:2.5px solid var(--ink);border-radius:3px;
+    transform:translateX(-50%);transition:left 1s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 2px 6px rgba(0,0,0,.18);}
+  .gauge-labels{display:flex;justify-content:space-between;font-size:11px;
+    color:var(--ink-mute);margin-top:5px;}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;}
+  .meta-card{background:white;border:1px solid var(--stroke);border-radius:12px;padding:12px;}
+  .meta-label{font-size:10px;font-weight:500;letter-spacing:0.07em;
+    text-transform:uppercase;color:var(--ink-mute);margin-bottom:4px;}
+  .meta-value{font-family:var(--display);font-weight:700;font-size:16px;}
+  .disclaimer-sm{padding:12px 14px;background:#FFFBEB;border:1px solid #FDE68A;
+    border-radius:10px;font-size:12px;color:#78350F;line-height:1.55;margin-top:14px;}
   .spin{display:inline-block;width:14px;height:14px;border-radius:50%;
     border:2px solid rgba(255,255,255,.4);border-top-color:white;
     animation:spin .7s linear infinite;vertical-align:middle;}
   @keyframes spin{to{transform:rotate(360deg);}}
+  input[type="file"]{display:none;}
 </style>
 </head>
 <body>
 <div class="bg"><div class="blob b1"></div><div class="blob b2"></div></div>
-
 <div class="wrap">
   <nav>
     <div class="brand">
       <div class="brand-mark">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-          <line x1="12" y1="19" x2="12" y2="22"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
         </svg>
       </div>
       <span class="brand-name">Voice<span style="color:var(--blue-600)">·</span>PD</span>
     </div>
-    <div class="nav-links">
-      <a href="/" class="btn-nav">← Voice Analysis</a>
-    </div>
+    <a href="/" class="btn-nav">← Voice Analysis</a>
   </nav>
 
   <div class="hero">
-    <div class="hero-eyebrow">Motor biomarker assessment · Research preview</div>
-    <h1>Motor Assessment</h1>
+    <div class="hero-eyebrow">Motor biomarker · Research preview</div>
+    <h1>Spiral Drawing Test</h1>
     <p class="hero-sub">
-      Two clinically validated digital biomarker tests — spiral drawing and typing dynamics —
-      scored against published reference ranges (Pullman 1998, Adams 2017).
-      Complete both to get a combined multi-modal Parkinson's risk estimate.
+      Draw or photograph an Archimedean spiral. Our HOG + SVM model
+      (LOO-AUC 0.899, trained on 102 clinical drawings) analyses the
+      shape for Parkinson's motor indicators.
+      <strong>A photo of a pen drawing gives the most accurate result.</strong>
     </p>
   </div>
 
-  <div class="progress-steps">
-    <div class="ps active" id="ps1"></div>
-    <div class="ps" id="ps2"></div>
-    <div class="ps" id="ps3"></div>
-  </div>
+  <div class="panel">
+    <h2>Provide a spiral drawing</h2>
+    <p class="panel-sub">Choose your input method. A photo of a hand-drawn spiral on paper is closest to the training data and gives the most reliable result.</p>
 
-  <div class="steps">
-    <!-- ── Spiral test ── -->
-    <div class="panel">
-      <span class="panel-num">1</span><h2>Spiral Drawing Test</h2>
-      <p class="panel-sub">
-        Trace the faint blue spiral guide from centre outward as smoothly as you can.
-        Use your mouse or finger. A healthy hand traces steadily — tremor and velocity
-        variability are the key signals.
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="switchMode('photo')">
+        📷 Photo upload <span style="font-size:11px;opacity:.7">(recommended)</span>
+      </button>
+      <button class="mode-tab" onclick="switchMode('canvas')">
+        🖱️ Draw on screen
+      </button>
+    </div>
+
+    <!-- Photo upload -->
+    <div class="mode-panel active" id="mode-photo">
+      <div class="upload-instructions">
+        📝 <strong>How to get the best result:</strong><br/>
+        1. Draw an Archimedean spiral on plain white paper with a dark pen — start from the centre, spiral outward, 4–5 loops.<br/>
+        2. Take a photo in good lighting, flat on a desk, spiral filling most of the frame.<br/>
+        3. Upload the photo below.
+      </div>
+      <div class="upload-zone" id="uploadZone"
+           onclick="document.getElementById('fileInput').click()"
+           ondragover="event.preventDefault();this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handleDrop(event)">
+        <div class="upload-zone-icon">🖼️</div>
+        <div class="upload-zone-title">Click to upload or drag &amp; drop</div>
+        <div class="upload-zone-sub">JPG · PNG · WebP · HEIC — any photo format</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)"/>
+      <img id="uploadPreview" class="upload-preview" alt="Spiral preview"/>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="resetUpload()">↺ Reset</button>
+        <button class="btn btn-primary" id="analyseUpload" onclick="analyseUpload()" disabled>Analyse photo →</button>
+      </div>
+    </div>
+
+    <!-- Canvas draw -->
+    <div class="mode-panel" id="mode-canvas">
+      <p style="font-size:13px;color:var(--ink-mute);margin-bottom:12px">
+        Trace the blue spiral guide from the centre outward.
+        <strong>Note:</strong> mouse drawing is less accurate than a pen photo since the model was trained on clinical pen drawings.
       </p>
-
-      <div class="canvas-wrap" style="height:300px" id="canvasWrap">
+      <div class="canvas-wrap" id="canvasWrap">
         <canvas id="spiralCanvas"></canvas>
-        <div class="canvas-overlay" id="canvasOverlay">
-          <div class="canvas-overlay-text">
-            🖊️ Click / tap here to start drawing<br/>
-            <span style="font-size:12px;opacity:.7">Trace the spiral from the centre outward</span>
+        <div class="canvas-hint" id="canvasHint">
+          <div class="canvas-hint-text">🖊️ Click or tap to start drawing<br/>
+            <span style="font-size:12px;opacity:.7">Trace from centre outward</span>
           </div>
         </div>
       </div>
-
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-ghost" onclick="resetSpiral()">↺ Reset</button>
-        <button class="btn btn-primary" id="analyseSpiral" onclick="analyseSpiral()" disabled>
-          Analyse spiral →
-        </button>
-      </div>
-
-      <div id="spiralResults" class="hidden">
-        <div class="score-ring-wrap" id="spiralScoreWrap"></div>
-        <div class="feature-grid" id="spiralFeatureGrid"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="resetCanvas()">↺ Reset</button>
+        <button class="btn btn-primary" id="analyseCanvas" onclick="analyseCanvas()" disabled>Analyse drawing →</button>
       </div>
     </div>
 
-    <!-- ── Typing test ── -->
-    <div class="panel">
-      <span class="panel-num">2</span><h2>Typing Dynamics Test</h2>
-      <p class="panel-sub">
-        Type the sentence below as naturally as you can — don't rush.
-        We measure the timing between keystrokes and how long you hold each key.
-        Parkinson's typically increases timing variability and slows typing speed.
-      </p>
-
-      <div class="target-sentence" id="targetDisplay"></div>
-
-      <input class="typing-input" id="typingInput"
-        placeholder="Start typing here…"
-        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-
-      <div class="typing-stats" id="typingStats" style="display:none">
-        <div class="typing-stat"><strong id="tWPM">—</strong>WPM</div>
-        <div class="typing-stat"><strong id="tIKI">—</strong>ms avg IKI</div>
-        <div class="typing-stat"><strong id="tErr">—</strong>% errors</div>
+    <!-- Result (shared) -->
+    <div class="result-panel" id="resultPanel">
+      <div class="result-verdict" id="resultVerdict">
+        <div class="verdict-icon" id="verdictIcon"></div>
+        <div>
+          <div class="verdict-title" id="verdictTitle"></div>
+          <div class="verdict-meta" id="verdictMeta"></div>
+        </div>
       </div>
-
-      <div style="margin-top:12px">
-        <button class="btn btn-ghost" onclick="resetTyping()" style="margin-right:8px">↺ Reset</button>
-        <button class="btn btn-primary" id="analyseTyping" onclick="analyseTyping()" disabled>
-          Analyse typing →
-        </button>
+      <div class="gauge-wrap">
+        <div class="gauge-label">
+          <span class="gauge-title">Parkinson's Probability</span>
+          <span class="gauge-value" id="gaugeValue">—</span>
+        </div>
+        <div class="gauge-bar"><div class="gauge-needle" id="gaugeNeedle" style="left:0%"></div></div>
+        <div class="gauge-labels"><span>Healthy (0%)</span><span>Threshold 50%</span><span>Parkinson's (100%)</span></div>
       </div>
-
-      <div id="typingResults" class="hidden">
-        <div class="score-ring-wrap" id="typingScoreWrap"></div>
-        <div class="feature-grid" id="typingFeatureGrid"></div>
+      <div class="meta-grid">
+        <div class="meta-card"><div class="meta-label">Confidence</div><div class="meta-value" id="metaConf">—</div></div>
+        <div class="meta-card"><div class="meta-label">Model</div><div class="meta-value" style="font-size:13px">HOG + SVM</div></div>
+        <div class="meta-card"><div class="meta-label">Input</div><div class="meta-value" id="metaSource" style="font-size:13px">—</div></div>
+      </div>
+      <div class="disclaimer-sm">
+        <strong>Research prototype only.</strong> Model trained on 102 clinical pen-on-paper
+        spiral drawings (LOO-AUC 0.899, Test AUC 0.889). Performance on browser canvas or
+        phone photos may vary due to domain differences from training data.
+        Not a medical diagnosis — consult a neurologist.
       </div>
     </div>
   </div>
 
-  <!-- ── Combined score ── -->
-  <div class="combined-panel hidden" id="combinedPanel">
-    <div class="combined-title">🧠 Combined Multimodal Assessment</div>
-    <div class="combined-sub">
-      Weighted fusion: Voice 55% · Spiral 28% · Typing 17%
-      &nbsp;—&nbsp; based on published PD multimodal literature
-    </div>
-
-    <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
-      <div style="font-family:var(--display);font-weight:700;font-size:38px;color:var(--blue-700)" id="combinedPct">—</div>
-      <div style="font-size:14px;color:var(--ink-mute)">combined Parkinson's probability</div>
-    </div>
-
-    <div class="combined-gauge">
-      <div class="combined-needle" id="combinedNeedle" style="left:0%"></div>
-    </div>
-    <div class="gauge-labels">
-      <span>Healthy (0%)</span>
-      <span>Threshold 38%</span>
-      <span>Parkinson's (100%)</span>
-    </div>
-
-    <div class="modality-bars" id="modalityBars"></div>
-    <div id="combinedVerdict"></div>
-
-    <div id="voicePrompt" class="hidden" style="margin-top:16px;padding:14px;background:var(--blue-50);border-radius:12px;border:1px solid var(--blue-100);font-size:13px;color:var(--ink-soft)">
-      💡 <strong>No voice reading yet.</strong> Go to the
-      <a href="/" style="color:var(--blue-600);font-weight:500">Voice Analyser</a>
-      and complete a voice test, then come back to see the full combined score.
-      For now, showing motor-only estimate.
-    </div>
-
-    <div class="disclaimer-sm">
-      <strong>Research prototype only.</strong> Spiral and typing features are scored
-      against published clinical reference ranges, not a trained classifier.
-      This is not a medical diagnosis. Consult a qualified neurologist.
-    </div>
+  <div style="text-align:center;padding:8px">
+    <a href="/" style="font-size:13px;color:var(--blue-600);font-weight:500;text-decoration:none">
+      ← Return to Voice Analysis for the validated voice biomarker test
+    </a>
   </div>
 </div>
 
 <script>
-// ── Constants ─────────────────────────────────────────────────────────────────
-const TARGET = "The quick brown fox jumps over the lazy dog";
+// ── Mode switching ─────────────────────────────────────────────────────────
+function switchMode(mode) {
+  document.querySelectorAll(".mode-tab").forEach((t,i) =>
+    t.classList.toggle("active",(i===0&&mode==="photo")||(i===1&&mode==="canvas")));
+  document.getElementById("mode-photo").classList.toggle("active", mode==="photo");
+  document.getElementById("mode-canvas").classList.toggle("active", mode==="canvas");
+  document.getElementById("resultPanel").style.display = "none";
+}
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let spiralPoints = [];
-let isDrawing = false;
-let spiralDone = false;
-let spiralScore = null;
+// ── Photo upload ────────────────────────────────────────────────────────────
+let uploadedFile = null;
 
-let keyEvents = [];
-let typingStarted = false;
-let typingDone = false;
-let typingScore = null;
-let typingInterval = null;
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) setUploadFile(file);
+}
 
-// Voice probability from localStorage (set after voice analysis)
-const voiceProb = parseFloat(localStorage.getItem("pvd_last_voice_prob") || "-1");
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById("uploadZone").classList.remove("drag");
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith("image/")) setUploadFile(file);
+}
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+function setUploadFile(file) {
+  uploadedFile = file;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = document.getElementById("uploadPreview");
+    img.src = ev.target.result;
+    img.style.display = "block";
+    document.getElementById("analyseUpload").disabled = false;
+    document.getElementById("uploadZone").style.opacity = "0.6";
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetUpload() {
+  uploadedFile = null;
+  document.getElementById("fileInput").value = "";
+  const img = document.getElementById("uploadPreview");
+  img.style.display = "none"; img.src = "";
+  document.getElementById("analyseUpload").disabled = true;
+  document.getElementById("uploadZone").style.opacity = "1";
+  document.getElementById("resultPanel").style.display = "none";
+}
+
+async function analyseUpload() {
+  if (!uploadedFile) return;
+  const btn = document.getElementById("analyseUpload");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Analysing…';
+  const fd = new FormData();
+  fd.append("image", uploadedFile);
+  try {
+    const res = await fetch("/api/motor/spiral-image", {method:"POST", body:fd});
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderResult(data);
+  } catch(e) {
+    alert("Analysis failed: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Analyse photo →";
+  }
+}
+
+// ── Canvas drawing ──────────────────────────────────────────────────────────
 const canvas = document.getElementById("spiralCanvas");
 const ctx = canvas.getContext("2d");
-const wrap = document.getElementById("canvasWrap");
+let spiralPts = [], isDrawing = false, spiralDone = false;
 
-function resize() {
+function resizeCanvas() {
+  const wrap = document.getElementById("canvasWrap");
   const r = wrap.getBoundingClientRect();
-  canvas.width = r.width * devicePixelRatio;
+  canvas.width  = r.width  * devicePixelRatio;
   canvas.height = r.height * devicePixelRatio;
-  canvas.style.width = r.width + "px";
+  canvas.style.width  = r.width  + "px";
   canvas.style.height = r.height + "px";
   ctx.scale(devicePixelRatio, devicePixelRatio);
   drawGuide();
 }
 
 function drawGuide() {
-  const W = canvas.width / devicePixelRatio;
-  const H = canvas.height / devicePixelRatio;
-  const cx = W / 2, cy = H / 2;
-  const maxR = Math.min(W, H) / 2 - 20;
-  ctx.clearRect(0, 0, W, H);
+  const W = canvas.width/devicePixelRatio, H = canvas.height/devicePixelRatio;
+  const cx=W/2, cy=H/2, maxR=Math.min(W,H)/2-20;
+  ctx.clearRect(0,0,W,H);
   ctx.beginPath();
-  const b = maxR / (6 * Math.PI);
-  for (let th = 0.1; th <= 6 * Math.PI; th += 0.05) {
-    const r = b * th;
-    const x = cx + r * Math.cos(th);
-    const y = cy + r * Math.sin(th);
-    th < 0.15 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  const b=maxR/(6*Math.PI);
+  for(let t=0.1;t<=6*Math.PI;t+=0.05){
+    const r=b*t,x=cx+r*Math.cos(t),y=cy+r*Math.sin(t);
+    t<0.15?ctx.moveTo(x,y):ctx.lineTo(x,y);
   }
-  ctx.strokeStyle = "#BFDBFE";
-  ctx.lineWidth = 14;
-  ctx.lineCap = "round";
-  ctx.stroke();
-  // Centre dot
-  ctx.beginPath();
-  ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
-  ctx.fillStyle = "#93C5FD";
-  ctx.fill();
+  ctx.strokeStyle="#BFDBFE"; ctx.lineWidth=12; ctx.lineCap="round"; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,5,0,2*Math.PI);
+  ctx.fillStyle="#93C5FD"; ctx.fill();
 }
 
-function pt(e) {
-  const r = canvas.getBoundingClientRect();
-  const src = e.touches ? e.touches[0] : e;
-  return {x: src.clientX - r.left, y: src.clientY - r.top, t: Date.now()};
+function pt(e){
+  const r=canvas.getBoundingClientRect(),s=e.touches?e.touches[0]:e;
+  return{x:s.clientX-r.left,y:s.clientY-r.top,t:Date.now()};
+}
+canvas.addEventListener("mousedown",e=>{if(spiralDone)return;isDrawing=true;spiralPts=[pt(e)];document.getElementById("canvasHint").style.opacity="0";});
+canvas.addEventListener("mousemove",e=>{if(!isDrawing||spiralDone)return;spiralPts.push(pt(e));redraw();});
+canvas.addEventListener("mouseup",()=>{if(isDrawing){isDrawing=false;if(spiralPts.length>50){spiralDone=true;document.getElementById("analyseCanvas").disabled=false;}}});
+canvas.addEventListener("touchstart",e=>{e.preventDefault();if(spiralDone)return;isDrawing=true;spiralPts=[pt(e)];document.getElementById("canvasHint").style.opacity="0";},{passive:false});
+canvas.addEventListener("touchmove",e=>{e.preventDefault();if(!isDrawing||spiralDone)return;spiralPts.push(pt(e));redraw();},{passive:false});
+canvas.addEventListener("touchend",()=>{if(isDrawing){isDrawing=false;if(spiralPts.length>50){spiralDone=true;document.getElementById("analyseCanvas").disabled=false;}}});
+
+function redraw(){
+  const W=canvas.width/devicePixelRatio,H=canvas.height/devicePixelRatio;
+  ctx.clearRect(0,0,W,H);drawGuide();
+  if(spiralPts.length<2)return;
+  ctx.beginPath();ctx.moveTo(spiralPts[0].x,spiralPts[0].y);
+  spiralPts.forEach((p,i)=>{if(i>0)ctx.lineTo(p.x,p.y);});
+  ctx.strokeStyle="#1D4ED8";ctx.lineWidth=2.5;ctx.lineCap="round";ctx.lineJoin="round";ctx.stroke();
 }
 
-canvas.addEventListener("mousedown", e => { if(spiralDone) return; isDrawing = true; spiralPoints = [pt(e)]; document.getElementById("canvasOverlay").style.opacity = "0"; });
-canvas.addEventListener("mousemove", e => { if(!isDrawing || spiralDone) return; spiralPoints.push(pt(e)); drawUserPath(); });
-canvas.addEventListener("mouseup", () => { if(isDrawing) { isDrawing = false; if(spiralPoints.length > 50) { spiralDone = true; document.getElementById("analyseSpiral").disabled = false; } } });
-canvas.addEventListener("touchstart", e => { e.preventDefault(); if(spiralDone) return; isDrawing = true; spiralPoints = [pt(e)]; document.getElementById("canvasOverlay").style.opacity = "0"; }, {passive:false});
-canvas.addEventListener("touchmove", e => { e.preventDefault(); if(!isDrawing || spiralDone) return; spiralPoints.push(pt(e)); drawUserPath(); }, {passive:false});
-canvas.addEventListener("touchend", () => { if(isDrawing) { isDrawing = false; if(spiralPoints.length > 50) { spiralDone = true; document.getElementById("analyseSpiral").disabled = false; } } });
-
-function drawUserPath() {
-  const W = canvas.width / devicePixelRatio;
-  const H = canvas.height / devicePixelRatio;
-  ctx.clearRect(0, 0, W, H);
+function resetCanvas(){
+  spiralPts=[];isDrawing=false;spiralDone=false;
+  document.getElementById("analyseCanvas").disabled=true;
+  document.getElementById("canvasHint").style.opacity="1";
+  document.getElementById("resultPanel").style.display="none";
   drawGuide();
-  if (spiralPoints.length < 2) return;
-  ctx.beginPath();
-  ctx.moveTo(spiralPoints[0].x, spiralPoints[0].y);
-  spiralPoints.forEach((p, i) => { if(i > 0) ctx.lineTo(p.x, p.y); });
-  ctx.strokeStyle = "#1D4ED8";
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.stroke();
 }
 
-function resetSpiral() {
-  spiralPoints = []; isDrawing = false; spiralDone = false; spiralScore = null;
-  document.getElementById("analyseSpiral").disabled = true;
-  document.getElementById("spiralResults").classList.add("hidden");
-  document.getElementById("canvasOverlay").style.opacity = "1";
-  document.getElementById("combinedPanel").classList.add("hidden");
-  drawGuide();
-  updateProgress();
+async function analyseCanvas(){
+  const btn=document.getElementById("analyseCanvas");
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analysing…';
+  const b64=canvas.toDataURL("image/png");
+  try{
+    const res=await fetch("/api/motor/spiral",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({image_b64:b64})});
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    renderResult(data);
+  }catch(e){alert("Analysis failed: "+e.message);}
+  finally{btn.disabled=false;btn.textContent="Analyse drawing →";}
 }
 
-// ── Spiral analysis ───────────────────────────────────────────────────────────
-function mean(arr) { return arr.reduce((a,b) => a+b, 0) / arr.length; }
-function std(arr) { const m = mean(arr); return Math.sqrt(mean(arr.map(x => (x-m)**2))); }
-function cv(arr) { const m = mean(arr); return m > 0 ? std(arr) / m : 0; }
-
-function extractSpiralFeatures(pts) {
-  if (pts.length < 20) return null;
-
-  // Velocities (px/ms)
-  const vels = [];
-  for (let i = 1; i < pts.length; i++) {
-    const dx = pts[i].x - pts[i-1].x;
-    const dy = pts[i].y - pts[i-1].y;
-    const dt = pts[i].t - pts[i-1].t;
-    if (dt > 0) vels.push(Math.sqrt(dx*dx + dy*dy) / dt);
-  }
-  if (vels.length < 5) return null;
-
-  const vel_cv = parseFloat(cv(vels).toFixed(4));
-  const vel_mean = parseFloat(mean(vels).toFixed(4));
-
-  // Tremor frequency — count zero crossings of velocity deviation signal
-  const velMn = mean(vels);
-  const dev = vels.map(v => v - velMn);
-  let crossings = 0;
-  for (let i = 1; i < dev.length; i++) {
-    if ((dev[i-1] < 0 && dev[i] >= 0) || (dev[i-1] >= 0 && dev[i] < 0)) crossings++;
-  }
-  const duration = (pts[pts.length-1].t - pts[0].t) / 1000; // seconds
-  const tremor_freq = parseFloat((crossings / (2 * Math.max(duration, 0.1))).toFixed(3));
-
-  // Deviation from ideal spiral
-  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
-  const cx = mean(xs), cy = mean(ys);
-  const radii = pts.map(p => Math.sqrt((p.x-cx)**2 + (p.y-cy)**2));
-  const maxR = Math.max(...radii);
-
-  // Ideal spiral radius at each angle
-  let deviations = [];
-  const b = maxR / (6 * Math.PI);
-  pts.forEach((p, i) => {
-    const angle = Math.atan2(p.y - cy, p.x - cx);
-    const theta = ((angle + 2 * Math.PI) % (2 * Math.PI));
-    // Map index to theta roughly
-    const idealTheta = (i / pts.length) * 6 * Math.PI;
-    const idealR = b * idealTheta;
-    const actualR = radii[i];
-    deviations.push(Math.abs(actualR - idealR));
-  });
-  const deviation_norm = parseFloat((mean(deviations) / Math.max(maxR, 1)).toFixed(4));
-
-  return { velocity_cv: vel_cv, tremor_freq, deviation_norm, velocity_mean: vel_mean };
+// ── Render result ───────────────────────────────────────────────────────────
+function renderResult(data){
+  const pct=(data.probability_pd*100).toFixed(1);
+  const isPD=data.prediction===1;
+  const verdict=document.getElementById("resultVerdict");
+  verdict.className="result-verdict "+(isPD?"pd":"healthy");
+  document.getElementById("verdictIcon").textContent=isPD?"⚠️":"✓";
+  document.getElementById("verdictTitle").textContent=data.label;
+  document.getElementById("verdictMeta").textContent=
+    "Probability: "+pct+"% · Threshold: 50% · Model: "+data.model;
+  document.getElementById("gaugeValue").textContent=pct+"%";
+  document.getElementById("gaugeNeedle").style.left=pct+"%";
+  document.getElementById("metaConf").textContent=data.confidence_pct+"%";
+  document.getElementById("metaSource").textContent=
+    data.source==="upload"?"Photo":"Canvas";
+  document.getElementById("resultPanel").style.display="block";
+  document.getElementById("resultPanel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
-async function analyseSpiral() {
-  const feats = extractSpiralFeatures(spiralPoints);
-  if (!feats) { alert("Not enough drawing data. Please draw the full spiral."); return; }
-
-  document.getElementById("analyseSpiral").innerHTML = '<span class="spin"></span> Scoring…';
-  document.getElementById("analyseSpiral").disabled = true;
-
-  try {
-    const res = await fetch("/api/motor/spiral", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(feats),
-    });
-    const data = await res.json();
-    spiralScore = data;
-    renderSpiralResults(data);
-    document.getElementById("ps1").classList.remove("active");
-    document.getElementById("ps1").classList.add("done");
-    document.getElementById("ps2").classList.add("active");
-    updateCombined();
-  } catch(e) {
-    alert("Scoring failed: " + e.message);
-  } finally {
-    document.getElementById("analyseSpiral").innerHTML = "✓ Done";
-  }
-}
-
-function scoreColor(score) {
-  if (score >= 70) return "var(--success)";
-  if (score >= 40) return "var(--warn)";
-  return "var(--danger)";
-}
-
-function renderScoreRing(wrapId, score, label) {
-  const pct = Math.max(0, Math.min(100, score));
-  const color = scoreColor(pct);
-  const r = 28, circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  document.getElementById(wrapId).innerHTML = `
-    <div class="score-ring">
-      <svg width="72" height="72" viewBox="0 0 72 72">
-        <circle cx="36" cy="36" r="${r}" fill="none" stroke="#EFF6FF" stroke-width="8"/>
-        <circle cx="36" cy="36" r="${r}" fill="none" stroke="${color}" stroke-width="8"
-          stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
-      </svg>
-      <div class="score-ring-val" style="color:${color}">${Math.round(pct)}</div>
-    </div>
-    <div class="score-desc">
-      <h4 style="color:${color}">${label}</h4>
-      <p>${pct >= 70 ? "Within normal clinical range" : pct >= 40 ? "Borderline — some markers elevated" : "Elevated motor indicators — consider clinical evaluation"}</p>
-    </div>`;
-}
-
-function renderFeatureGrid(gridId, features) {
-  const el = document.getElementById(gridId);
-  el.innerHTML = Object.entries(features).map(([k, f]) => {
-    const cls = `status-${f.status}`;
-    return `<div class="feature-card">
-      <div class="feature-label">${f.label}</div>
-      <div class="feature-value ${cls}">${
-        f.unit === "Hz" ? f.value.toFixed(2) + " Hz"
-        : f.unit === "WPM" ? f.value.toFixed(0) + " WPM"
-        : f.unit === "fraction" ? (f.value * 100).toFixed(1) + "%"
-        : f.value.toFixed(3)
-      }</div>
-      <div class="feature-ref">Healthy: ${f.healthy_range} · PD: ${f.pd_range}</div>
-    </div>`;
-  }).join("");
-}
-
-function renderSpiralResults(data) {
-  renderScoreRing("spiralScoreWrap", data.overall_score, "Spiral Motor Score");
-  renderFeatureGrid("spiralFeatureGrid", data.features);
-  document.getElementById("spiralResults").classList.remove("hidden");
-}
-
-// ── Typing test ───────────────────────────────────────────────────────────────
-function initTyping() {
-  const display = document.getElementById("targetDisplay");
-  display.innerHTML = TARGET.split("").map((c, i) =>
-    `<span id="tc${i}">${c === " " ? "&nbsp;" : c}</span>`
-  ).join("");
-
-  const inp = document.getElementById("typingInput");
-  let keydownTimes = {};
-
-  inp.addEventListener("keydown", e => {
-    if (!typingDone) {
-      if (!typingStarted) {
-        typingStarted = true;
-        startTypingTimer();
-      }
-      keydownTimes[e.code] = Date.now();
-      keyEvents.push({key: e.key, code: e.code, type: "down", t: Date.now()});
-    }
-  });
-
-  inp.addEventListener("keyup", e => {
-    if (!typingDone) {
-      const hold = keydownTimes[e.code] ? Date.now() - keydownTimes[e.code] : null;
-      keyEvents.push({key: e.key, code: e.code, type: "up", t: Date.now(), hold});
-    }
-  });
-
-  inp.addEventListener("input", () => {
-    if (typingDone) return;
-    updateTypingDisplay();
-    if (inp.value.length >= TARGET.length) {
-      typingDone = true;
-      clearInterval(typingInterval);
-      document.getElementById("analyseTyping").disabled = false;
-      inp.blur();
-    }
-  });
-}
-
-function updateTypingDisplay() {
-  const val = document.getElementById("typingInput").value;
-  for (let i = 0; i < TARGET.length; i++) {
-    const el = document.getElementById("tc" + i);
-    if (!el) continue;
-    if (i < val.length) {
-      el.className = val[i] === TARGET[i] ? "char-correct" : "char-wrong";
-    } else if (i === val.length) {
-      el.className = "char-current";
-    } else {
-      el.className = "";
-    }
-  }
-  // Live stats
-  const elapsed = typingStarted ? (Date.now() - keyEvents.find(e=>e.type==="down")?.t || 1) / 60000 : 0;
-  const words = val.trim().split(/\s+/).length;
-  const wpm = elapsed > 0 ? Math.round(words / elapsed) : 0;
-  document.getElementById("tWPM").textContent = wpm;
-  document.getElementById("typingStats").style.display = "flex";
-
-  // IKI
-  const downs = keyEvents.filter(e => e.type === "down" && !["Backspace","Delete","Shift"].includes(e.key));
-  const ikis = [];
-  for (let i = 1; i < downs.length; i++) ikis.push(downs[i].t - downs[i-1].t);
-  if (ikis.length > 0) document.getElementById("tIKI").textContent = Math.round(mean(ikis));
-
-  // Errors
-  const errors = keyEvents.filter(e => e.type === "down" && e.key === "Backspace").length;
-  const total = keyEvents.filter(e => e.type === "down").length;
-  document.getElementById("tErr").textContent = total > 0 ? (errors/total*100).toFixed(0) : "0";
-}
-
-function startTypingTimer() {
-  typingInterval = setInterval(updateTypingDisplay, 500);
-}
-
-function resetTyping() {
-  keyEvents = []; typingStarted = false; typingDone = false; typingScore = null;
-  clearInterval(typingInterval);
-  document.getElementById("typingInput").value = "";
-  document.getElementById("analyseTyping").disabled = true;
-  document.getElementById("typingResults").classList.add("hidden");
-  document.getElementById("typingStats").style.display = "none";
-  document.getElementById("combinedPanel").classList.add("hidden");
-  for (let i = 0; i < TARGET.length; i++) {
-    const el = document.getElementById("tc" + i); if(el) el.className = "";
-  }
-  updateProgress();
-}
-
-function extractTypingFeatures() {
-  const downs = keyEvents.filter(e => e.type === "down");
-  const printable = downs.filter(e => e.key.length === 1 || e.key === "Space");
-  const backspaces = downs.filter(e => e.key === "Backspace");
-
-  // IKI
-  const ikis = [];
-  for (let i = 1; i < printable.length; i++) ikis.push(printable[i].t - printable[i-1].t);
-
-  // Hold times
-  const holds = keyEvents.filter(e => e.type === "up" && e.hold !== null && e.hold > 0).map(e => e.hold);
-
-  // WPM
-  const firstDown = downs[0]?.t;
-  const lastDown  = downs[downs.length-1]?.t;
-  const duration_min = firstDown && lastDown ? (lastDown - firstDown) / 60000 : 0;
-  const wpm = duration_min > 0 ? (TARGET.split(" ").length / duration_min) : 0;
-
-  return {
-    iki_mean: ikis.length > 0 ? parseFloat(mean(ikis).toFixed(1)) : null,
-    iki_cv:   ikis.length > 1 ? parseFloat(cv(ikis).toFixed(4)) : null,
-    wpm:      parseFloat(wpm.toFixed(1)),
-    hold_mean: holds.length > 0 ? parseFloat(mean(holds).toFixed(1)) : null,
-    hold_cv:   holds.length > 1 ? parseFloat(cv(holds).toFixed(4)) : null,
-    error_rate: downs.length > 0 ? parseFloat((backspaces.length / downs.length).toFixed(4)) : 0,
-    n_keys: downs.length,
-  };
-}
-
-async function analyseTyping() {
-  const feats = extractTypingFeatures();
-  document.getElementById("analyseTyping").innerHTML = '<span class="spin"></span> Scoring…';
-  document.getElementById("analyseTyping").disabled = true;
-
-  try {
-    const res = await fetch("/api/motor/typing", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(feats),
-    });
-    const data = await res.json();
-    typingScore = data;
-    renderTypingResults(data);
-    document.getElementById("ps2").classList.remove("active");
-    document.getElementById("ps2").classList.add("done");
-    document.getElementById("ps3").classList.add("active");
-    updateCombined();
-  } catch(e) {
-    alert("Scoring failed: " + e.message);
-  } finally {
-    document.getElementById("analyseTyping").innerHTML = "✓ Done";
-  }
-}
-
-function renderTypingResults(data) {
-  renderScoreRing("typingScoreWrap", data.overall_score, "Typing Motor Score");
-  renderFeatureGrid("typingFeatureGrid", data.features);
-  document.getElementById("typingResults").classList.remove("hidden");
-}
-
-// ── Combined score ────────────────────────────────────────────────────────────
-async function updateCombined() {
-  if (!spiralScore || !typingScore) return;
-
-  const body = {
-    spiral_score: spiralScore.overall_score,
-    typing_score: typingScore.overall_score,
-    voice_probability: voiceProb >= 0 ? voiceProb : null,
-  };
-
-  try {
-    const res = await fetch("/api/motor/combined", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
-    renderCombined(data);
-    document.getElementById("ps3").classList.add("done");
-  } catch(e) {
-    console.error("Combined score failed:", e);
-  }
-}
-
-function renderCombined(data) {
-  const panel = document.getElementById("combinedPanel");
-  panel.classList.remove("hidden");
-
-  const pct = (data.combined_probability * 100).toFixed(1);
-  document.getElementById("combinedPct").textContent = pct + "%";
-  document.getElementById("combinedNeedle").style.left = pct + "%";
-
-  const breakdown = data.breakdown;
-  document.getElementById("modalityBars").innerHTML = Object.entries(breakdown).map(([k, v]) => {
-    const riskPct = (v.risk * 100).toFixed(1);
-    const contribPct = (v.contribution * 100).toFixed(1);
-    const icons = {voice: "🎙️", spiral: "✍️", typing: "⌨️"};
-    return `<div class="mod-bar">
-      <div class="mod-label">${icons[k]} ${k.charAt(0).toUpperCase()+k.slice(1)} risk</div>
-      <div class="mod-value">${riskPct}%</div>
-      <div class="mod-contrib">Contributes ${contribPct}% to combined</div>
-      <div class="mod-bar-fill">
-        <div class="mod-bar-fill-inner" style="width:${riskPct}%"></div>
-      </div>
-    </div>`;
-  }).join("");
-
-  const isPD = data.prediction === 1;
-  document.getElementById("combinedVerdict").innerHTML = `
-    <div class="verdict-box ${isPD ? 'pd' : 'healthy'}">
-      <div class="verdict-icon2">
-        ${isPD
-          ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-          : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>'}
-      </div>
-      <div>
-        <div class="verdict-label">${data.label}</div>
-        <div class="verdict-meta">Combined probability: ${pct}% · Threshold: ${(data.threshold*100).toFixed(0)}% · Confidence: ${data.confidence_pct}%</div>
-      </div>
-    </div>`;
-
-  if (voiceProb < 0) {
-    document.getElementById("voicePrompt").classList.remove("hidden");
-  }
-}
-
-function updateProgress() {
-  // Reset progress indicators
-  document.getElementById("ps1").className = "ps active";
-  document.getElementById("ps2").className = "ps";
-  document.getElementById("ps3").className = "ps";
-}
-
-// ── Boot ──────────────────────────────────────────────────────────────────────
-window.addEventListener("load", () => {
-  resize();
-  initTyping();
-});
-window.addEventListener("resize", resize);
+window.addEventListener("load",resizeCanvas);
+window.addEventListener("resize",resizeCanvas);
 </script>
 </body>
 </html>
