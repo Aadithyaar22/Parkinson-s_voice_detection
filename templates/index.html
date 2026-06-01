@@ -1004,6 +1004,27 @@ analyzeBtn.addEventListener("click", async () => {
     lastResult=data;
     render(data);
     showStatus("Analysis complete.");
+    // ── Save voice result for motor page (direct save, always runs) ──
+    try {
+      localStorage.setItem("pvd_last_voice_result", JSON.stringify({
+        probability_pd: data.probability_pd,
+        prediction:     data.prediction,
+        confidence_pct: data.confidence_pct,
+        backend:        data.backend,
+        model:          data.model,
+        threshold_used: data.threshold_used,
+        timestamp:      new Date().toISOString(),
+      }));
+      localStorage.setItem("pvd_last_voice_prob", data.probability_pd.toString());
+    } catch(_e) {}
+    // ── Motor flow ────────────────────────────────────────────────────
+    var _mPending = localStorage.getItem("pvd_motor_pending");
+    if (_mPending) {
+      localStorage.removeItem("pvd_motor_pending");
+      showMotorRedirectPrompt(data.probability_pd);
+    } else {
+      showMotorSuggestion(data.probability_pd);
+    }
   } catch (err) {
     showStatus("<strong style='color:var(--danger)'>Error:</strong> " + err.message);
   } finally {
@@ -1135,46 +1156,36 @@ function updateAuthUI() {
 }
 updateAuthUI();
 
-// ── Restore last voice result on page load ───────────────────────────────────
+// ── Detect ?from=motor on load ───────────────────────────────────────────────
 (function() {
-  // Detect ?from=motor redirect
-  if (window.location.search.indexOf("from=motor") !== -1) {
-    localStorage.setItem("pvd_motor_pending", "1");
-    history.replaceState({}, "", "/");
-    setTimeout(function() {
-      var wrap = document.querySelector(".wrap");
-      if (!wrap) return;
-      var b = document.createElement("div");
-      b.id = "motorFlowBanner";
-      b.style.cssText = "background:linear-gradient(135deg,#EFF6FF,#F5F3FF);border:1px solid #BFDBFE;border-radius:14px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#3E4A6F;display:flex;align-items:center;gap:12px;";
-      b.innerHTML = '<span style="font-size:20px">✦</span><span><strong style="color:#0B1533">Complete voice test first.</strong> After your voice analysis, you will be taken directly to the spiral motor test to get a combined multimodal result.</span>';
-      var header = wrap.querySelector("header") || wrap.firstElementChild;
-      if (header) header.parentNode.insertBefore(b, header.nextSibling);
-    }, 100);
-  }
-
-  const raw = localStorage.getItem("pvd_last_voice_result");
-  if (!raw) return;
-  try {
-    const r = JSON.parse(raw);
-    // Restore lastResult so save button works
-    lastResult = r;
-    // Show save panel immediately
-    const sp = document.getElementById("savePanel");
-    if (sp) {
-      sp.style.display = "block";
-      const sm = document.getElementById("saveMsg");
-      if (sm) sm.textContent = "";
-      const nb = document.getElementById("notesField");
-      if (nb) nb.value = "";
-      // Show a subtle "previous result" badge
-      const badge = document.createElement("div");
-      badge.style.cssText = "font-size:11px;color:var(--ink-mute);margin-bottom:8px;";
-      badge.textContent = "↩ Previous result — record again or save this one";
-      sp.insertBefore(badge, sp.firstChild);
-    }
-    updateAuthUI();
-  } catch(e) {}
+  if (window.location.search.indexOf("from=motor") === -1) return;
+  localStorage.setItem("pvd_motor_pending", "1");
+  history.replaceState({}, "", "/");
+  // Insert blue banner directly into body — reliable
+  document.addEventListener("DOMContentLoaded", function() {
+    var banner = document.createElement("div");
+    banner.id = "motorFlowBanner";
+    banner.style.cssText = [
+      "position:fixed","top:0","left:0","right:0","z-index:999",
+      "background:linear-gradient(135deg,#EFF6FF,#F5F3FF)",
+      "border-bottom:1px solid #BFDBFE","padding:14px 24px",
+      "font-size:13px","color:#3E4A6F",
+      "display:flex","align-items:center","gap:12px",
+      "box-shadow:0 2px 12px rgba(37,99,235,.12)"
+    ].join(";");
+    banner.innerHTML = [
+      "<span style='font-size:18px'>✦</span>",
+      "<span>",
+        "<strong style='color:#0B1533'>Complete voice test first.</strong>",
+        " After your voice analysis you will be taken directly to the spiral motor test.",
+      "</span>",
+      "<button onclick='this.parentNode.remove()' style='margin-left:auto;background:none;",
+        "border:none;cursor:pointer;color:#6B7796;font-size:18px;line-height:1'>×</button>"
+    ].join("");
+    document.body.insertBefore(banner, document.body.firstChild);
+    // Add top padding so header isn't hidden behind banner
+    document.body.style.paddingTop = "50px";
+  });
 })();
 
 // Show save panel after analysis
@@ -1226,38 +1237,14 @@ if (saveBtn) {
   });
 }
 
-// Hook into render to show save panel + save voice result + motor prompts
+// Trigger save panel and auth UI after render
+// (motor flow and voice save are handled directly in analyzeBtn handler above)
 const _renderOrig = window.render;
 if (typeof _renderOrig === "function") {
   window.render = function(r) {
     _renderOrig(r);
     showSavePanel();
     updateAuthUI();
-
-    // Save full voice result for motor page
-    localStorage.setItem("pvd_last_voice_result", JSON.stringify({
-      probability_pd:  r.probability_pd,
-      prediction:      r.prediction,
-      confidence_pct:  r.confidence_pct,
-      backend:         r.backend,
-      model:           r.model,
-      threshold_used:  r.threshold_used,
-      timestamp:       new Date().toISOString(),
-    }));
-    localStorage.setItem("pvd_last_voice_prob", r.probability_pd.toString());
-
-    // Show motor AUC pill
-    const mp = document.getElementById("motorAucPill");
-    // motor pill removed
-
-    // Motor pending → strong redirect prompt
-    const motorPending = localStorage.getItem("pvd_motor_pending");
-    if (motorPending) {
-      localStorage.removeItem("pvd_motor_pending");
-      showMotorRedirectPrompt(r.probability_pd);
-    } else {
-      showMotorSuggestion(r.probability_pd);
-    }
   };
 }
 

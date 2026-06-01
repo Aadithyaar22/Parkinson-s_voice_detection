@@ -518,13 +518,8 @@ if (!voiceResult && voiceProbFallback) {
   voiceResult = {probability_pd: p, prediction: p >= 0.38 ? 1 : 0,
     confidence_pct: (100*Math.max(p,1-p)).toFixed(1), backend:"wav2vec2", model:"logreg"};
 }
-// If still no voice result, set pending flag so voice page knows to redirect back
 if (!voiceResult) {
   localStorage.setItem("pvd_motor_pending", "1");
-}
-
-if (!voiceResult) {
-  // Redirect to voice page with ?from=motor so it knows to redirect back
   window.location.href = "/?from=motor";
 } else {
   // Show voice context banner
