@@ -526,8 +526,7 @@ if (!voiceResult) {
 if (!voiceResult) {
   // Redirect to voice page with ?from=motor so it knows to redirect back
   window.location.href = "/?from=motor";
-} else if (false) { // placeholder
-  void 0;} else {
+} else {
   // Show voice context banner
   const voicePct = (voiceResult.probability_pd * 100).toFixed(1);
   const voiceColor = voiceResult.prediction === 1 ? "#DC2B4C" : "#0EA371";
