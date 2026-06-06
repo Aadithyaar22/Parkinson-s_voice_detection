@@ -679,7 +679,6 @@
         <a href="/login" id="pvd-login-btn" class="pill" style="text-decoration:none">Sign in</a>
       {% endif %}
         <a href="/motor" class="pill" style="text-decoration:none">✦ Motor test</a>
-        <span class="pill" id="motorAucPill" style="display:none">LOO-AUC 0.899</span>
     </div>
   </header>
 
@@ -1288,7 +1287,7 @@ function showMotorRedirectPrompt(voiceProb) {
   var fb = document.getElementById("motorFlowBanner");
   if (fb) fb.remove();
   function update() {
-    el.innerHTML = '<div style="background:linear-gradient(135deg,#EFF6FF,#F5F3FF);border:1px solid #BFDBFE;border-radius:16px;padding:20px 22px;margin-top:20px;display:flex;align-items:center;gap:16px;"><div style="font-size:32px">✍️</div><div style="flex:1"><div style="font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:4px">Now complete the spiral motor test</div><div style="font-size:13px;color:var(--ink-soft);line-height:1.5">Voice result: <strong>' + pct + '% Parkinson\'s probability</strong>. Redirecting in <strong>' + secs + 's</strong>.</div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"><a href="/motor" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:linear-gradient(180deg,#3B82F6,#1D4ED8);color:white;border-radius:12px;font-weight:600;font-size:13px;text-decoration:none">Go now →</a><button onclick="clearInterval(window._mTimer);document.getElementById('motorPromptBox').style.display='none'" style="font-size:12px;color:var(--ink-mute);background:none;border:none;cursor:pointer">Stay here</button></div></div>';
+    el.innerHTML = `<div style="background:linear-gradient(135deg,#EFF6FF,#F5F3FF);border:1px solid #BFDBFE;border-radius:16px;padding:20px 22px;margin-top:20px;display:flex;align-items:center;gap:16px;"><div style="font-size:32px">✍️</div><div style="flex:1"><div style="font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink);margin-bottom:4px">Now complete the spiral motor test</div><div style="font-size:13px;color:var(--ink-soft);line-height:1.5">Voice result: <strong>${pct}% Parkinson's probability</strong>. Redirecting in <strong>${secs}s</strong>.</div></div><div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0"><a href="/motor" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:linear-gradient(180deg,#3B82F6,#1D4ED8);color:white;border-radius:12px;font-weight:600;font-size:13px;text-decoration:none">Go now →</a><button onclick="clearInterval(window._mTimer);document.getElementById('motorPromptBox').style.display='none'" style="font-size:12px;color:var(--ink-mute);background:none;border:none;cursor:pointer">Stay here</button></div></div>`;
   }
   update();
   window._mTimer = setInterval(function() {

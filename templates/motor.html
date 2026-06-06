@@ -236,7 +236,6 @@
         <div class="meta-card"><div class="meta-label">Input</div><div class="meta-value" id="metaSource" style="font-size:13px">—</div></div>
       </div>
       <div id="combinedSaveBanner" style="display:none"></div>
-    <div id="combinedSaveBanner" style="display:none"></div>
     <div class="disclaimer-sm">
         <strong>Research prototype only.</strong> Model trained on 102 clinical pen-on-paper
         spiral drawings (LOO-AUC 0.899, Test AUC 0.889). Performance on browser canvas or
@@ -489,7 +488,7 @@ async function saveMotorCombined(voiceRisk, spiralRisk, combined, spiralPred) {
         audio_duration_s: 0,
         backend:         "multimodal",
         model:           "voice+spiral",
-        notes:           notes || \`Voice \${(voiceRisk*100).toFixed(1)}% · Spiral \${(spiralRisk*100).toFixed(1)}%\`,
+        notes:           notes || `Voice ${(voiceRisk*100).toFixed(1)}% · Spiral ${(spiralRisk*100).toFixed(1)}%`,
       }),
     });
     if (res.status === 401) { localStorage.removeItem("pvd_token"); window.location.href="/login"; return; }
@@ -522,120 +521,6 @@ if (!voiceResult && voiceProbFallback) {
 if (!voiceResult) {
   localStorage.setItem("pvd_motor_pending", "1");
   window.location.href = "/?from=motor";
-} else {
-  // Show voice context banner
-  const voicePct = (voiceResult.probability_pd * 100).toFixed(1);
-  const voiceColor = voiceResult.prediction === 1 ? "#DC2B4C" : "#0EA371";
-  const banner = document.createElement("div");
-  banner.style.cssText = "background:var(--blue-50);border:1px solid var(--blue-100);border-radius:14px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;font-size:13px;";
-  banner.innerHTML = `
-    <div>
-      <span style="font-family:var(--display);font-weight:600;color:var(--ink)">🎙️ Voice result loaded</span>
-      <span style="color:var(--ink-mute);margin-left:8px">
-        Parkinson's Probability: <strong style="color:${voiceColor}">${voicePct}%</strong>
-        · The combined score will use this alongside your spiral result.
-      </span>
-    </div>
-    <a href="/" style="font-size:12px;color:var(--blue-600);font-weight:500;text-decoration:none;white-space:nowrap;margin-left:16px">Re-test voice</a>`;
-  const hero = document.querySelector(".hero");
-  if (hero) hero.parentNode.insertBefore(banner, hero);
-}
-
-
-// ── Save combined reading to MongoDB ──────────────────────────────────────────
-async function saveCombinedReading(spiralData) {
-  const token = localStorage.getItem("pvd_token");
-  if (!token || !voiceResult) return;
-
-  const voiceRisk = voiceResult.probability_pd;
-  const spiralRisk = spiralData.probability_pd;
-  // Weighted: voice 55%, spiral 45% (no typing in this version)
-  const combined = voiceRisk * 0.55 + spiralRisk * 0.45;
-
-  const body = {
-    // Voice data
-    probability_pd:   voiceResult.probability_pd,
-    prediction:       voiceResult.prediction,
-    confidence_pct:   voiceResult.confidence_pct,
-    audio_duration_s: 0,
-    backend:          voiceResult.backend,
-    model:            voiceResult.model,
-    notes:            `Combined session — Spiral: ${(spiralRisk*100).toFixed(1)}% · Voice: ${(voiceRisk*100).toFixed(1)}% · Combined: ${(combined*100).toFixed(1)}%`,
-  };
-
-  try {
-    const res = await fetch("/api/readings", {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Authorization":"Bearer "+token},
-      body: JSON.stringify(body),
-    });
-    if (res.ok) {
-      showSaveBanner(combined, spiralRisk, voiceRisk);
-    }
-  } catch(e) {
-    console.error("Save failed:", e);
-  }
-}
-
-function showSaveBanner(combined, spiralRisk, voiceRisk) {
-  const pct = (combined * 100).toFixed(1);
-  const color = combined >= 0.38 ? "#DC2B4C" : "#0EA371";
-  const banner = document.getElementById("combinedSaveBanner");
-  if (banner) {
-    banner.innerHTML = `
-      <div style="background:var(--blue-50);border:1px solid var(--blue-200);border-radius:14px;
-        padding:16px 18px;margin-top:20px;font-size:13px;">
-        <div style="font-family:var(--display);font-weight:600;font-size:15px;margin-bottom:6px">
-          ✅ Combined assessment saved to your history
-        </div>
-        <div style="color:var(--ink-soft)">
-          Voice: <strong>${(voiceRisk*100).toFixed(1)}%</strong> ·
-          Spiral: <strong>${(spiralRisk*100).toFixed(1)}%</strong> ·
-          Combined (55/45): <strong style="color:${color}">${pct}%</strong>
-        </div>
-        <a href="/dashboard" style="display:inline-block;margin-top:10px;
-          font-size:12px;color:var(--blue-600);font-weight:500;text-decoration:none">
-          View in dashboard →
-        </a>
-      </div>`;
-    banner.style.display = "block";
-  }
-}
-
-
-// ── Gate: require voice test first ────────────────────────────────────────────
-const voiceResultRaw = localStorage.getItem("pvd_last_voice_result");
-let voiceResult = null;
-try { voiceResult = voiceResultRaw ? JSON.parse(voiceResultRaw) : null; } catch(e) {}
-
-if (!voiceResult) {
-  // Block the page
-  document.querySelector(".wrap").innerHTML = `
-    <nav>
-      <div class="brand">
-        <div class="brand-mark">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/>
-          </svg>
-        </div>
-        <span class="brand-name">Voice<span style="color:var(--blue-600)">·</span>PD</span>
-      </div>
-      <a href="/" class="btn-nav">← Voice Analysis</a>
-    </nav>
-    <div style="text-align:center;padding:80px 20px;max-width:500px;margin:0 auto">
-      <div style="font-size:48px;margin-bottom:20px">🎙️</div>
-      <h2 style="font-family:var(--display);font-weight:700;font-size:26px;
-        letter-spacing:-0.02em;margin-bottom:12px">Complete voice test first</h2>
-      <p style="font-size:15px;color:var(--ink-soft);line-height:1.6;margin-bottom:28px">
-        The motor spiral test is the secondary assessment — it works alongside
-        your voice result to give a combined multimodal Parkinson's probability.
-        Please complete the voice analysis first.
-      </p>
-      <a href="/" class="btn btn-primary" style="display:inline-flex;text-decoration:none">
-        Go to Voice Analysis →
-      </a>
-    </div>`;
 } else {
   // Show voice context banner
   const voicePct = (voiceResult.probability_pd * 100).toFixed(1);
